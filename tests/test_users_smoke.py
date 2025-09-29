@@ -29,6 +29,7 @@ from tests.schemas.json_schemas import LIST_USERS_SCHEMA, RESOURCE_LIST_SCHEMA, 
 
 
 @pytest.mark.smoke
+@pytest.mark.regression
 @pytest.mark.parametrize("page", [1, 2])
 def test_list_users_returns_expected_schema(api_client, users_endpoint, page: int) -> None:
     response = api_client.get(users_endpoint, params={"page": page})
@@ -40,6 +41,7 @@ def test_list_users_returns_expected_schema(api_client, users_endpoint, page: in
 
 
 @pytest.mark.smoke
+@pytest.mark.regression
 def test_single_user_response_matches_schema(api_client, users_endpoint) -> None:
     response = api_client.get(f"{users_endpoint}/2")
 
@@ -51,6 +53,7 @@ def test_single_user_response_matches_schema(api_client, users_endpoint) -> None
 
 
 @pytest.mark.smoke
+@pytest.mark.regression
 def test_list_resources_response_matches_schema(api_client, support_endpoint) -> None:
     response = api_client.get(support_endpoint)
 
