@@ -1,0 +1,131 @@
+name: API Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Create reports directory
+      run: mkdir -p reports
+    
+    - name: Run CRUD tests
+      run: pytest -m crud --junitxml=reports/crud-junit.xml --html=reports/crud-report.html --self-contained-html
+    
+    - name: Run validation tests
+      run: pytest -m validation --junitxml=reports/validation-junit.xml --html=reports/validation-report.html --self-contained-html
+    
+    - name: Run security tests (excluding slow ones)
+      run: pytest -m "security and not slow" --junitxml=reports/security-junit.xml --html=reports/security-report.html --self-contained-html
+    
+    - name: Run performance tests (excluding slow ones)
+      run: pytest -m "performance and not slow" --junitxml=reports/performance-junit.xml --html=reports/performance-report.html --self-contained-html
+    
+    - name: Run full test suite
+      run: pytest -m "not slow" --junitxml=reports/junit.xml --html=reports/report.html --self-contained-html
+    
+    - name: Upload test reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-reports-python-${{ matrix.python-version }}
+        path: reports/
+        retention-days: 30
+    
+    - name: Upload JUnit XML for test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: API Test Results (Python ${{ matrix.python-version }})
+        path: reports/*.xml
+        reporter: java-junit
+
+  performance:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Create reports directory
+      run: mkdir -p reports
+    
+    - name: Run performance tests
+      run: pytest -m performance --junitxml=reports/performance-junit.xml --html=reports/performance-report.html --self-contained-html
+    
+    - name: Upload performance reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-reports
+        path: reports/
+        retention-days: 30
+
+  security:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Create reports directory
+      run: mkdir -p reports
+    
+    - name: Run security tests
+      run: pytest -m security --junitxml=reports/security-junit.xml --html=reports/security-report.html --self-contained-html
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-reports
+        path: reports/
+        retention-days: 30

@@ -1,0 +1,87 @@
+# ------------------------
+# Python
+# ------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# ------------------------
+# Testing & Coverage
+# ------------------------
+.pytest_cache/
+.cache/
+reports/
+.coverage
+coverage.xml
+htmlcov/
+
+# ------------------------
+# Jupyter / IPython
+# ------------------------
+.ipynb_checkpoints/
+*.ipynb
+
+# ------------------------
+# Logs & Temp
+# ------------------------
+*.log
+*.tmp
+
+# ------------------------
+# OS-specific
+# ------------------------
+.DS_Store
+Thumbs.db
+
+# ------------------------
+# IDEs and Editors
+# ------------------------
+
+# VS Code
+.vscode/
+.history/
+*.code-workspace
+
+# PyCharm / IntelliJ / JetBrains
+.idea/
+*.iml
+out/
+
+# Cursor (derives from VS Code, but keeps extra config)
+.cursor/
+.cursordb/
+
+# GitHub Desktop conflict backups
+*.orig
+*.bak
+
+# ------------------------
+# Environment & Secrets
+# ------------------------
+.env
+.env.*
+secrets.json
+
+# ------------------------
+# Pyright / Type Checking
+# ------------------------
+.pyright/          # Local Pyright cache
+
+# ------------------------
+# Locust Performance Testing
+# ------------------------
+# Logs and reports
+locust.log
+locustfile.pyc
+*.csv
+*.stats
+*.stats_history
+*.html  # e.g., Locust HTML reports

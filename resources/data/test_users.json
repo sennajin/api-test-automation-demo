@@ -1,0 +1,100 @@
+{
+  "valid_users": [
+    {
+      "name": "John Doe",
+      "job": "Software Engineer"
+    },
+    {
+      "name": "Jane Smith",
+      "job": "Product Manager"
+    },
+    {
+      "name": "Alice Johnson",
+      "job": "UX Designer"
+    },
+    {
+      "name": "Bob Wilson",
+      "job": "Data Scientist"
+    },
+    {
+      "name": "Carol Brown",
+      "job": "DevOps Engineer"
+    }
+  ],
+  "update_users": [
+    {
+      "name": "John Doe Updated",
+      "job": "Senior Software Engineer"
+    },
+    {
+      "name": "Jane Smith Updated",
+      "job": "Senior Product Manager"
+    },
+    {
+      "name": "Alice Johnson Updated",
+      "job": "Senior UX Designer"
+    }
+  ],
+  "invalid_users": [
+    {
+      "name": "",
+      "job": "Invalid Empty Name"
+    },
+    {
+      "name": "Invalid Empty Job",
+      "job": ""
+    },
+    {
+      "name": null,
+      "job": "Invalid Null Name"
+    },
+    {
+      "name": "Invalid Null Job",
+      "job": null
+    }
+  ],
+  "edge_case_users": [
+    {
+      "name": "Very Long Name That Exceeds Normal Length Expectations And Contains Multiple Words To Test System Limits",
+      "job": "Very Long Job Title That Also Exceeds Normal Length Expectations And Contains Multiple Words"
+    },
+    {
+      "name": "José María O'Connor-Smith",
+      "job": "Software Engineer & Data Scientist"
+    },
+    {
+      "name": "张三李四",
+      "job": "Développeur 🚀"
+    },
+    {
+      "name": "User@#$%^&*()",
+      "job": "Job!@#$%^&*()"
+    },
+    {
+      "name": "12345",
+      "job": "67890"
+    }
+  ],
+  "performance_users": [
+    {
+      "name": "Perf User 1",
+      "job": "Performance Tester"
+    },
+    {
+      "name": "Perf User 2",
+      "job": "Load Tester"
+    },
+    {
+      "name": "Perf User 3",
+      "job": "Stress Tester"
+    },
+    {
+      "name": "Perf User 4",
+      "job": "Endurance Tester"
+    },
+    {
+      "name": "Perf User 5",
+      "job": "Volume Tester"
+    }
+  ]
+}
