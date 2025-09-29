@@ -508,10 +508,8 @@ def isolated_update_data():
 @pytest.fixture
 def response_validator():
     """Factory fixture for common response validations."""
-<<<<<<< HEAD
-    from tests.conftest import assert_valid_schema
-=======
->>>>>>> fa2d84e (moved schema validation helper to conftest.py)
+
+
     from tests.test_constants import HTTP_STATUS, PERFORMANCE_THRESHOLDS
     import time
     
@@ -577,33 +575,8 @@ def xfail_if_rate_limited(response, where: str | None = None):
 
 
 # JSON Schema validation helpers
-class SchemaValidationError(AssertionError):
-    """Wrap jsonschema's ValidationError so pytest shows assertion context."""
 
 
-def assert_valid_schema(payload: Any, schema: Mapping[str, Any]) -> None:
-    """
-    Assert that payload satisfies the provided JSON schema.
-    
-    Purpose:
-        Validates that the response data structure matches the expected JSON schema.
-        This ensures API responses conform to the documented contract.
-    
-    Parameters:
-        payload: The response data to validate (Any)
-        schema: The JSON schema to validate against (dict)
-    
-    Raises:
-        SchemaValidationError: If schema validation fails, with detailed error message
-    
-    Usage:
-        assert_valid_schema(response.json(), USER_SCHEMA)
-    """
-
-    try:
-        validate(instance=payload, schema=schema)
-    except ValidationError as exc:
-        raise SchemaValidationError(str(exc)) from exc
 
 
 # Allure-specific fixtures and helpers

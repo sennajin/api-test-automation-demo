@@ -31,11 +31,7 @@ from typing import Dict
 import pytest
 from requests import Response
 
-<<<<<<< HEAD
-from .conftest import APIClient
-=======
-from conftest import APIClient
->>>>>>> fa2d84e (moved schema validation helper to conftest.py)
+from tests.conftest import APIClient
 from tests.conftest import assert_valid_schema
 from tests.schemas.json_schemas import LOGIN_SUCCESS_SCHEMA, LOGIN_ERROR_SCHEMA
 
