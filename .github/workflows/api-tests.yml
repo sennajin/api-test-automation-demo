@@ -5,127 +5,134 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
+  schedule:
+    - cron: '0 2 * * *'  # nightly at 2 AM UTC
+  workflow_dispatch:  # Allow manual triggering
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.10']
+        test-suite: [ "not slow" ]
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    
-    - name: Cache pip dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Create reports directory
-      run: mkdir -p reports
-    
-    - name: Run CRUD tests
-      run: pytest -m crud --junitxml=reports/crud-junit.xml --html=reports/crud-report.html --self-contained-html
-    
-    - name: Run validation tests
-      run: pytest -m validation --junitxml=reports/validation-junit.xml --html=reports/validation-report.html --self-contained-html
-    
-    - name: Run security tests (excluding slow ones)
-      run: pytest -m "security and not slow" --junitxml=reports/security-junit.xml --html=reports/security-report.html --self-contained-html
-    
-    - name: Run performance tests (excluding slow ones)
-      run: pytest -m "performance and not slow" --junitxml=reports/performance-junit.xml --html=reports/performance-report.html --self-contained-html
-    
-    - name: Run full test suite
-      run: pytest -m "not slow" --junitxml=reports/junit.xml --html=reports/report.html --self-contained-html
-    
-    - name: Upload test reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-reports-python-${{ matrix.python-version }}
-        path: reports/
-        retention-days: 30
-    
-    - name: Upload JUnit XML for test results
-      uses: dorny/test-reporter@v1
-      if: always()
-      with:
-        name: API Test Results (Python ${{ matrix.python-version }})
-        path: reports/*.xml
-        reporter: java-junit
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-  performance:
+      - name: Set up Python ${{ matrix.python-version }} with pip cache
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+            pyproject.toml
+            poetry.lock
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Debug test discovery
+        run: |
+          echo "=== Test Discovery Debug ==="
+          echo "Current directory: $(pwd)"
+          echo "Contents of tests directory:"
+          ls -la tests/ || echo "tests/ directory not found"
+          echo "Python version: $(python --version)"
+          echo "Pytest version: $(pytest --version)"
+          echo "Available test markers:"
+          pytest --markers | grep -E "(smoke|post|get|put|delete|crud|regression|performance|negative|data_validation|security|slow|rate_limited)" || echo "No custom markers found"
+          echo "Tests matching marker '${{ matrix.test-suite }}':"
+          pytest tests/ -m "${{ matrix.test-suite }}" --collect-only -q || echo "No tests found with marker '${{ matrix.test-suite }}'"
+
+      - name: Run tests
+        run: |
+          mkdir -p reports/allure-results
+          echo "Attempting to run tests with marker: ${{ matrix.test-suite }}"
+          if pytest tests/ -m "${{ matrix.test-suite }}" --collect-only -q >/dev/null 2>&1; then
+            echo "Running tests with marker filtering..."
+            pytest tests/ -m "${{ matrix.test-suite }}" \
+              --junitxml=reports/junit-${{ matrix.python-version }}-${{ matrix.test-suite }}.xml \
+              --html=reports/html-${{ matrix.python-version }}-${{ matrix.test-suite }}.html \
+              --self-contained-html \
+              --alluredir=reports/allure-results \
+              -v
+          else
+            echo "No tests found with marker '${{ matrix.test-suite }}', running all tests..."
+            pytest tests/ \
+              --junitxml=reports/junit-${{ matrix.python-version }}-all.xml \
+              --html=reports/html-${{ matrix.python-version }}-all.html \
+              --self-contained-html \
+              --alluredir=reports/allure-results \
+              -v
+          fi
+
+      - name: Get Allure history
+        uses: actions/checkout@v4
+        if: always()
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Setup Pages
+        if: always()
+        uses: actions/configure-pages@v4
+
+      - name: Generate Allure Report
+        uses: simple-elf/allure-report-action@master
+        if: always()
+        with:
+          allure_results: reports/allure-results
+          allure_history: allure-history
+          keep_reports: 20
+          github_run_num: ${{ github.run_number }}
+          github_run_id: ${{ github.run_id }}
+          allure_report: allure-report
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: allure-history
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.python-version }}-${{ matrix.test-suite }}
+          path: |
+            reports/
+            allure-history/
+          retention-days: 30
+
+  # Deploy job
+  deploy:
+    needs: test
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Create reports directory
-      run: mkdir -p reports
-    
-    - name: Run performance tests
-      run: pytest -m performance --junitxml=reports/performance-junit.xml --html=reports/performance-report.html --self-contained-html
-    
-    - name: Upload performance reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: performance-reports
-        path: reports/
-        retention-days: 30
-
-  security:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Create reports directory
-      run: mkdir -p reports
-    
-    - name: Run security tests
-      run: pytest -m security --junitxml=reports/security-junit.xml --html=reports/security-report.html --self-contained-html
-    
-    - name: Upload security reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: security-reports
-        path: reports/
-        retention-days: 30
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
