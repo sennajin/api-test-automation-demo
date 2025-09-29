@@ -35,6 +35,7 @@ from tests.schemas.json_schemas import (
     SINGLE_USER_SCHEMA,
     LIST_USERS_SCHEMA,
     ERROR_SCHEMA,
+    RESOURCE_LIST_SCHEMA,
 )
 from tests.test_constants import TEST_USER_IDS, HTTP_STATUS
 
@@ -114,6 +115,8 @@ class TestUserRetrieval(BaseUserTest):
         """Test retrieving an existing user by ID."""
         user_id = TEST_USER_IDS["EXISTING_USER"]
         response = api_client.get(f"{users_endpoint}/{user_id}")
+        # Handle rate limiting gracefully
+        xfail_if_rate_limited(response, "user retrieval")
         payload = response_validator(response, HTTP_STATUS["OK"], SINGLE_USER_SCHEMA)
 
         # Verify the returned user ID matches the requested ID
@@ -139,6 +142,8 @@ class TestUserRetrieval(BaseUserTest):
     def test_get_users_list_pagination(self, api_client, users_endpoint, page):
         """Test users list with different page numbers."""
         response = api_client.get(users_endpoint, params={"page": page})
+        # Handle rate limiting gracefully
+        xfail_if_rate_limited(response, "users list pagination")
         assert response.status_code == HTTP_STATUS["OK"]
 
         payload = response.json()
@@ -155,6 +160,47 @@ class TestUserRetrieval(BaseUserTest):
         payload = response.json()
         assert payload["page"] == 1
 
+    @pytest.mark.smoke
+    @pytest.mark.regression
+    @pytest.mark.parametrize("page", [1, 2])
+    def test_list_users_returns_expected_schema(self, api_client, users_endpoint, page: int) -> None:
+        """Test that user list endpoint returns expected schema and data."""
+        response = api_client.get(users_endpoint, params={"page": page})
+        # Handle rate limiting gracefully
+        xfail_if_rate_limited(response, "users list schema validation")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert_valid_schema(payload, LIST_USERS_SCHEMA)
+        assert payload["data"], "Expected at least one user in the list"
+
+    @pytest.mark.smoke
+    @pytest.mark.regression
+    def test_single_user_response_matches_schema(self, api_client, users_endpoint) -> None:
+        """Test that single user endpoint returns expected schema and data."""
+        response = api_client.get(f"{users_endpoint}/2")
+        # Handle rate limiting gracefully
+        xfail_if_rate_limited(response, "single user schema validation")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert_valid_schema(payload, SINGLE_USER_SCHEMA)
+        user = payload["data"]
+        assert user["id"] == 2
+
+    @pytest.mark.smoke
+    @pytest.mark.regression
+    def test_list_resources_response_matches_schema(self, api_client, support_endpoint) -> None:
+        """Test that resources endpoint returns expected schema and data."""
+        response = api_client.get(support_endpoint)
+        # Handle rate limiting gracefully
+        xfail_if_rate_limited(response, "resources schema validation")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert_valid_schema(payload, RESOURCE_LIST_SCHEMA)
+        assert payload["total"] >= len(payload["data"]) >= 1
+
 
 class TestUserUpdate(BaseUserTest):
     """Tests for PUT /users/{id} endpoint."""
@@ -163,7 +209,9 @@ class TestUserUpdate(BaseUserTest):
     def test_update_existing_user(self, api_client, users_endpoint, update_user_data):
         """Test successful user update."""
         user_id = TEST_USER_IDS["EXISTING_USER"]
-        response = api_client.put(f"{users_endpoint}/{user_id}", json=update_user_data)
+        response = api_client.put(f"{users_endpoint}/{user_id}", json=update_user_data, bulk_mode=True)
+        # Handle rate limiting gracefully
+        xfail_if_rate_limited(response, "user update")
         assert response.status_code == HTTP_STATUS["OK"]
 
         payload = response.json()
@@ -180,7 +228,9 @@ class TestUserUpdate(BaseUserTest):
     def test_update_user_variations(self, api_client, users_endpoint, test_case):
         """Test various update scenarios including edge cases."""
         user_id = TEST_USER_IDS[test_case["user_id_key"]]
-        response = api_client.put(f"{users_endpoint}/{user_id}", json=test_case["data"])
+        response = api_client.put(f"{users_endpoint}/{user_id}", json=test_case["data"], bulk_mode=True)
+        # Handle rate limiting gracefully
+        xfail_if_rate_limited(response, "user update variations")
         assert response.status_code == HTTP_STATUS["OK"]
 
         payload = response.json()
@@ -198,6 +248,8 @@ class TestUserDeletion(BaseUserTest):
         """Test successful user deletion."""
         user_id = TEST_USER_IDS["EXISTING_USER"]
         response = api_client.delete(f"{users_endpoint}/{user_id}")
+        # Handle rate limiting gracefully
+        xfail_if_rate_limited(response, "user deletion")
         assert response.status_code == HTTP_STATUS["NO_CONTENT"]
         assert not response.content  # Empty response body
 
@@ -230,3 +282,4 @@ class TestUserDeletion(BaseUserTest):
         response = api_client.delete(f"{users_endpoint}/{invalid_id}")
         # ReqRes API returns 204 even for invalid IDs, but we document the behavior
         assert response.status_code == HTTP_STATUS["NO_CONTENT"]
+

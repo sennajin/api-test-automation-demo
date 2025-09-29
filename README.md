@@ -33,9 +33,8 @@ A comprehensive pytest-based API testing framework for RESTful APIs, with a focu
 │   ├── schemas/            # JSON schemas for validation
 │   │   └── json_schemas.py # Schema definitions
 │   ├── test_auth_login.py  # Authentication tests
-│   ├── test_users_crud.py  # CRUD operation tests
+│   ├── test_users_crud.py  # CRUD operation tests (includes smoke tests)
 │   ├── test_users_security.py # Security tests
-│   ├── test_users_smoke.py # Smoke tests
 │   ├── test_performance.py # Performance tests
 │   ├── test_constants.py   # Test constants and configuration
 │   └── security_config.py  # Security test configuration
@@ -165,7 +164,7 @@ To enable GitHub Pages for your repository:
 
 The framework includes the following test categories:
 
-- **Smoke Tests**: Basic API availability and functionality tests (`test_users_smoke.py`)
+- **Smoke Tests**: Basic API availability and functionality tests (integrated in `test_users_crud.py`)
 - **Regression Tests**: Comprehensive functional tests
 - **CRUD Tests**: Create, Read, Update, Delete operations (`test_users_crud.py`)
 - **Security Tests**: Authentication, authorization, and security edge cases (`test_users_security.py`, `test_auth_login.py`)

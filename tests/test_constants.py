@@ -136,16 +136,16 @@ TIMEOUTS: Final[TimeoutConfig] = ENV_SPECIFIC_TIMEOUTS["ci"]  # Default to CI en
 
 # Retry configuration for rate limiting
 class RetrySettings:
-    # Number of retry attempts before giving up
-    MAX_RETRIES: Final[int] = 3
+    # Number of retry attempts before giving up (increased for CI)
+    MAX_RETRIES: Final[int] = 5
     # Exponential backoff factor between retries (in seconds)
-    BACKOFF_FACTOR: Final[float] = 1.0
+    BACKOFF_FACTOR: Final[float] = 2.0
     # Status codes that should trigger a retry:
     # 429: Too Many Requests (rate limiting)
     # 502: Bad Gateway, 503: Service Unavailable, 504: Gateway Timeout (server errors)
     RETRY_STATUS_CODES: Final[List[int]] = [429, 502, 503, 504]
-    # Maximum backoff time regardless of retry count
-    MAX_BACKOFF: Final[float] = 10.0
+    # Maximum backoff time regardless of retry count (increased for CI)
+    MAX_BACKOFF: Final[float] = 30.0
 
 
 # Create the typed dictionary for compatibility
@@ -158,10 +158,10 @@ RETRY_CONFIG: Final[RetryConfig] = {
 
 # More aggressive retry configuration for bulk/performance tests
 BULK_RETRY_CONFIG: Final[RetryConfig] = {
-    "MAX_RETRIES": 5,  # More retries for bulk operations due to higher chance of rate limiting
-    "BACKOFF_FACTOR": 1.5,  # Longer backoff to allow system recovery during heavy load
+    "MAX_RETRIES": 8,  # More retries for bulk operations due to higher chance of rate limiting
+    "BACKOFF_FACTOR": 3.0,  # Longer backoff to allow system recovery during heavy load
     "RETRY_STATUS_CODES": RetrySettings.RETRY_STATUS_CODES,
-    "MAX_BACKOFF": 15.0,  # Longer maximum wait for bulk operations
+    "MAX_BACKOFF": 60.0,  # Longer maximum wait for bulk operations
 }
 
 # Patterns for testing input sanitization

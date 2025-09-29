@@ -39,9 +39,8 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p allure-results
-          pytest -n auto -m "not e2e" \
-            --alluredir=allure-results \
-            --junitxml=reports/junit.xml || exit_code=$?
+          # Use custom test runner with rate limiting protection
+          python scripts/run_tests_with_delay.py || exit_code=$?
           echo "exit_code=${exit_code:-0}" >> "$GITHUB_OUTPUT"
           if [ "${exit_code:-0}" -ne 0 ]; then
             echo "Some tests failed" >> $GITHUB_STEP_SUMMARY

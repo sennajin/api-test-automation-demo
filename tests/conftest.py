@@ -676,3 +676,24 @@ def allure_attach_file(file_path: str, name: str | None = None, attachment_type:
             body=content,
             attachment_type=getattr(allure.attachment_type, attachment_type, allure.attachment_type.TEXT)
         )
+
+
+# Rate limiting protection hooks
+_last_test_class = None
+
+def pytest_runtest_setup(item):
+    """Add delays between test classes to prevent rate limiting."""
+    global _last_test_class
+    import time
+    
+    test_class = item.cls.__name__ if item.cls else "NoClass"
+    
+    # Add delay between different test classes
+    if _last_test_class and _last_test_class != test_class:
+        print(f"\nRate limiting protection: Waiting 2s between test classes...")
+        time.sleep(2.0)
+    
+    _last_test_class = test_class
+    
+    # Small delay between tests in the same class
+    time.sleep(0.5)
