@@ -157,6 +157,19 @@ jobs:
             cp -r ./allure-results-locust/* ./allure-results/ 2>/dev/null || true
           fi
 
+      - name: Checkout previous gh-pages to pull history
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Copy history from previous report
+        run: |
+          if [ -d gh-pages/data/history ]; then
+            mkdir -p allure-results/history
+            cp -r gh-pages/data/history/* allure-results/history/ || true
+          fi
+
       - name: Build Allure report with history
         id: allure
         uses: simple-elf/allure-report-action@v1.13
