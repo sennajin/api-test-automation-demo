@@ -1,4 +1,0 @@
-Warning: Mass assignment possible for field: admin
-Warning: Mass assignment possible for field: role
-Warning: Mass assignment possible for field: password
-Warning: Mass assignment possible for field: is_active

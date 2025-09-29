@@ -1,0 +1,6 @@
+Availability Test Results:
+  Total requests: 12
+  Successful: 12
+  Failed: 0
+  Availability: 100.00%
+  SLA Threshold: 99.9%

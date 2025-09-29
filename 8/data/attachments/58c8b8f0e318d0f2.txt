@@ -1,0 +1,6 @@
+Throughput Test Results:
+  Test duration: 60.08s
+  Completed requests: 600
+  Successful requests: 600
+  Actual throughput: 599.18 req/min
+  SLA threshold: 100 req/min

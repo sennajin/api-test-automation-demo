@@ -1,2 +1,0 @@
-Concurrent requests - Successful: 100, Errors: 0
-Success rate: 100.0%

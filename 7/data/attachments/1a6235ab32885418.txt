@@ -1,2 +1,0 @@
-Successful requests: 50
-Rate limited requests: 0

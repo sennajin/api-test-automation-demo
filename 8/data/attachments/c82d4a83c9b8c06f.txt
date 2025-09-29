@@ -1,0 +1,18 @@
+Starting endurance test for 300 seconds...
+  29s: 15 requests, 15 successful
+  61s: 30 requests, 30 successful
+  92s: 45 requests, 45 successful
+  123s: 60 requests, 60 successful
+  154s: 75 requests, 75 successful
+  185s: 90 requests, 90 successful
+  217s: 105 requests, 105 successful
+  248s: 120 requests, 120 successful
+  279s: 135 requests, 135 successful
+Endurance Test Results:
+  Total time: 301.85s
+  Total requests: 145
+  Successful requests: 145
+  Success rate: 100.00%
+  Average response time: 0.082s
+  Min response time: 0.011s
+  Max response time: 0.175s
