@@ -166,7 +166,7 @@ UPDATE_USER_SCHEMA = {
             "description": "Last update timestamp"
         },
     },
-    "required": ["name", "job", "updatedAt"],
+    "required": ["updatedAt"],
     "additionalProperties": False,
 }
 

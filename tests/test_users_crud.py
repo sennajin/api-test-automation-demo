@@ -120,7 +120,7 @@ class TestUserRetrieval(BaseUserTest):
     @pytest.mark.negative
     @pytest.mark.parametrize("user_id_key, expected_status", [
         ("NON_EXISTENT_USER", "NOT_FOUND"),
-        ("INVALID_FORMAT", "NOT_FOUND")
+        ("INVALID_USER", "NOT_FOUND")
     ])
     def test_get_user_negative_cases(self, api_client, users_endpoint, user_id_key, expected_status):
         """Test retrieving users with invalid or non-existent IDs."""
