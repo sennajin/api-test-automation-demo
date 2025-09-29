@@ -110,6 +110,29 @@ jobs:
         with:
           name: allure-report-built
           path: ./
+      
+      - name: Find latest report subfolder
+        id: latest
+        run: |
+          latest=$(ls -d */ | grep -E '^[0-9]+/$' | sed 's#/##' | sort -n | tail -1)
+          echo "latest_folder=$latest" >> $GITHUB_OUTPUT
+
+      - name: Create root index.html that redirects to latest report
+        run: |
+          cat <<EOF > index.html
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta http-equiv="refresh" content="0; url=${{ steps.latest.outputs.latest_folder }}/">
+              <title>Redirecting to the latest Allure report...</title>
+            </head>
+            <body>
+              <p>Redirecting to the latest Allure report...</p>
+              <a href="${{ steps.latest.outputs.latest_folder }}/">Click here if you are not redirected.</a>
+            </body>
+          </html>
+          EOF
+      
       - name: Publish to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
