@@ -24,8 +24,7 @@ A comprehensive pytest-based API testing framework for RESTful APIs, with a focu
 │   └── data/               # Test data files
 │       └── test_users.json # User data for testing
 ├── scripts/                # Utility scripts
-│   ├── generate_allure_report.bat  # Windows script for Allure reports
-│   └── generate_allure_report.py   # Python script for Allure reports
+│   └── locust_to_allure.py # Locust to Allure results converter
 ├── tests/                  # Test files
 │   ├── conftest.py         # Pytest configuration and fixtures
 │   ├── schemas/            # JSON schemas for validation
@@ -102,11 +101,9 @@ Generate and view Allure reports locally:
 # Run tests with Allure reporting
 pytest --alluredir=reports/allure-results
 
-# Generate and open Allure report
-python scripts/generate_allure_report.py --open
-
-# Or use the batch script on Windows
-scripts\generate_allure_report.bat
+# Generate and open Allure report (requires Allure CLI)
+allure generate reports/allure-results -o reports/allure-report --clean
+allure open reports/allure-report
 ```
 
 ### CI/CD Reporting

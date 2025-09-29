@@ -66,17 +66,96 @@ jobs:
             reports/**
           if-no-files-found: ignore
 
-  build_allure:
-    name: Build Allure report (fails if report generation fails)
+  performance_tests:
+    name: Run Locust performance tests
     needs: tests
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-      - name: Download Allure raw results
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f pyproject.toml ]; then pip install -e ".[dev]" || true; fi
+
+      - name: Run Locust performance tests
+        id: locust
+        continue-on-error: true
+        run: |
+          mkdir -p allure-results
+          # Run Locust in headless mode with CSV output for Allure integration
+          locust --headless \
+            -u 10 \
+            -r 2 \
+            -t 1m \
+            --host=https://reqres.in \
+            --csv=locust_results \
+            --html=locust-report.html \
+            -f perf/locustfile.py || exit_code=$?
+          echo "exit_code=${exit_code:-0}" >> "$GITHUB_OUTPUT"
+          if [ "${exit_code:-0}" -ne 0 ]; then
+            echo "Performance tests had issues" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Performance tests completed successfully" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Generate Allure results for Locust
+        run: |
+          python scripts/locust_to_allure.py \
+            --csv-file locust_results_stats.csv \
+            --output-dir allure-results
+
+      - name: Upload Locust HTML report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: locust-report
+          path: locust-report.html
+          if-no-files-found: warn
+
+      - name: Upload Locust Allure results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-locust
+          path: allure-results
+          if-no-files-found: warn
+
+  build_allure:
+    name: Build Allure report (fails if report generation fails)
+    needs: [tests, performance_tests]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download pytest Allure results
         uses: actions/download-artifact@v4
         with:
           name: allure-results
-          path: ./allure-results
+          path: ./allure-results-pytest
+
+      - name: Download Locust Allure results
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results-locust
+          path: ./allure-results-locust
+
+      - name: Merge Allure results
+        run: |
+          mkdir -p ./allure-results
+          # Copy pytest results
+          if [ -d "./allure-results-pytest" ]; then
+            cp -r ./allure-results-pytest/* ./allure-results/ 2>/dev/null || true
+          fi
+          # Copy Locust results
+          if [ -d "./allure-results-locust" ]; then
+            cp -r ./allure-results-locust/* ./allure-results/ 2>/dev/null || true
+          fi
 
       - name: Build Allure report with history
         id: allure
