@@ -28,7 +28,7 @@ from __future__ import annotations
 import pytest
 from typing import Any, Dict
 
-from tests.conftest import assert_valid_schema, verify_user_creation_response
+from tests.conftest import assert_valid_schema, verify_user_creation_response, xfail_if_rate_limited
 from tests.schemas.json_schemas import (
     CREATE_USER_SCHEMA,
     UPDATE_USER_SCHEMA,
@@ -84,6 +84,8 @@ class TestUserCreation(BaseUserTest):
                 user_data[test_case["field"]] = test_case["value"]
 
         response = api_client.post(users_endpoint, json=user_data, bulk_mode=True)
+        # Handle rate limiting gracefully
+        xfail_if_rate_limited(response, "user creation with invalid data")
         # ReqRes API is permissive, but we document the actual behavior
         assert response.status_code in [HTTP_STATUS["CREATED"], HTTP_STATUS["BAD_REQUEST"]]
 
