@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.10']
-        test-suite: [ "not slow" ]
+        test-suite: [ "regression" ]
 
     steps:
       - uses: actions/checkout@v4
