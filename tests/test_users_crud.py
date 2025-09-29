@@ -113,7 +113,7 @@ class TestUserRetrieval(BaseUserTest):
         user_id = TEST_USER_IDS["EXISTING_USER"]
         response = api_client.get(f"{users_endpoint}/{user_id}")
         payload = response_validator(response, HTTP_STATUS["OK"], SINGLE_USER_SCHEMA)
-        
+
         # Verify the returned user ID matches the requested ID
         assert payload["data"]["id"] == user_id
 
@@ -186,3 +186,45 @@ class TestUserUpdate(BaseUserTest):
 
         if test_case["data"]:
             self.verify_user_data(payload, test_case["data"])
+
+
+class TestUserDeletion(BaseUserTest):
+    """Tests for DELETE /users/{id} endpoint."""
+
+    @pytest.mark.crud
+    def test_delete_existing_user(self, api_client, users_endpoint):
+        """Test successful user deletion."""
+        user_id = TEST_USER_IDS["EXISTING_USER"]
+        response = api_client.delete(f"{users_endpoint}/{user_id}")
+        assert response.status_code == HTTP_STATUS["NO_CONTENT"]
+        assert not response.content  # Empty response body
+
+    @pytest.mark.negative
+    def test_delete_non_existent_user(self, api_client, users_endpoint):
+        """Test deleting a user that doesn't exist."""
+        user_id = TEST_USER_IDS["NON_EXISTENT_USER"]
+        response = api_client.delete(f"{users_endpoint}/{user_id}")
+        # ReqRes API returns 204 even for non-existent users, but we document the behavior
+        assert response.status_code == HTTP_STATUS["NO_CONTENT"]
+
+    @pytest.mark.negative
+    def test_delete_user_twice(self, api_client, users_endpoint):
+        """Test deleting a user twice (idempotency test)."""
+        user_id = TEST_USER_IDS["EXISTING_USER"]
+
+        # First deletion
+        response = api_client.delete(f"{users_endpoint}/{user_id}")
+        assert response.status_code == HTTP_STATUS["NO_CONTENT"]
+
+        # Second deletion (should be idempotent)
+        response = api_client.delete(f"{users_endpoint}/{user_id}")
+        # ReqRes API returns 204 for the second deletion as well, showing idempotent behavior
+        assert response.status_code == HTTP_STATUS["NO_CONTENT"]
+
+    @pytest.mark.negative
+    def test_delete_user_with_invalid_id(self, api_client, users_endpoint):
+        """Test deleting a user with an invalid ID."""
+        invalid_id = "invalid"
+        response = api_client.delete(f"{users_endpoint}/{invalid_id}")
+        # ReqRes API returns 204 even for invalid IDs, but we document the behavior
+        assert response.status_code == HTTP_STATUS["NO_CONTENT"]
