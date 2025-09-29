@@ -1,5 +1,0 @@
-Connection Pool Endurance Results:
-  Test duration: 60s
-  Concurrent workers: 5
-  Total requests: 574
-  Average requests per worker: 114.8

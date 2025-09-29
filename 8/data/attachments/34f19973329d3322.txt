@@ -1,5 +1,0 @@
-browse_users: 0.167s
-view_user: 0.022s
-create_user: 0.090s
-update_user: 0.161s
-delete_user: 0.088s

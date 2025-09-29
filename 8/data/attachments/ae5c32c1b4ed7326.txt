@@ -1,7 +1,0 @@
-Testing graceful degradation under increasing load...
-  Load level 5: 433 requests in 10.07s (throughput: 42.98 req/s)
-  Load level 10: 885 requests in 10.12s (throughput: 87.42 req/s)
-  Load level 20: 1784 requests in 10.12s (throughput: 176.26 req/s)
-  Load level 30: 2734 requests in 10.16s (throughput: 269.18 req/s)
-  Load level 40: 3681 requests in 10.16s (throughput: 362.22 req/s)
-  Load level 50: 4624 requests in 10.17s (throughput: 454.87 req/s)

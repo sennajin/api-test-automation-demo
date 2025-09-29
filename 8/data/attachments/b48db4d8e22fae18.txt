@@ -1,8 +1,0 @@
-Starting extreme stress test: 50 workers for 30s...
-Extreme Stress Test Results:
-  Test duration: 30.53s
-  Concurrent workers: 50
-  Total requests: 20224
-  Successful requests: 20224
-  Errors: 0
-  Success rate: 100.00%
