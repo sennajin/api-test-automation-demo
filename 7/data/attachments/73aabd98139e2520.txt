@@ -1,0 +1,41 @@
+Method GET: status 200
+Method POST: status 201
+Method PUT: status 404
+Method PUT caused error: Unexpected status 404 for method PUT
+assert 404 in [200, 201, 400, 405, 501, 502]
+ +  where 404 = <Response [404]>.status_code
+Method DELETE: status 204
+Method DELETE caused error: Unexpected status 204 for method DELETE
+assert 204 in [200, 201, 400, 405, 501, 502]
+ +  where 204 = <Response [204]>.status_code
+Method PATCH: status 404
+Method PATCH caused error: Unexpected status 404 for method PATCH
+assert 404 in [200, 201, 400, 405, 501, 502]
+ +  where 404 = <Response [404]>.status_code
+Method HEAD: status 200
+Method OPTIONS: status 204
+Method OPTIONS caused error: Unexpected status 204 for method OPTIONS
+assert 204 in [200, 201, 400, 405, 501, 502]
+ +  where 204 = <Response [204]>.status_code
+Method TRACE: status 405
+Method CONNECT: status 400
+Method PROPFIND: status 404
+Method PROPFIND caused error: Unexpected status 404 for method PROPFIND
+assert 404 in [200, 201, 400, 405, 501, 502]
+ +  where 404 = <Response [404]>.status_code
+Method PROPPATCH: status 404
+Method PROPPATCH caused error: Unexpected status 404 for method PROPPATCH
+assert 404 in [200, 201, 400, 405, 501, 502]
+ +  where 404 = <Response [404]>.status_code
+Method MKCOL: status 404
+Method MKCOL caused error: Unexpected status 404 for method MKCOL
+assert 404 in [200, 201, 400, 405, 501, 502]
+ +  where 404 = <Response [404]>.status_code
+Method COPY: status 404
+Method COPY caused error: Unexpected status 404 for method COPY
+assert 404 in [200, 201, 400, 405, 501, 502]
+ +  where 404 = <Response [404]>.status_code
+Method MOVE: status 404
+Method MOVE caused error: Unexpected status 404 for method MOVE
+assert 404 in [200, 201, 400, 405, 501, 502]
+ +  where 404 = <Response [404]>.status_code
