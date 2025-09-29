@@ -8,7 +8,7 @@ A comprehensive PyTest-based API automation suite that demonstrates functional, 
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -21,7 +21,7 @@ pytest
 
 #### Standard HTML and JUnit Reports
 ```bash
-# Generate HTML and JUnit reports (recommended for deliverables)
+# Generate HTML and JUnit reports
 pytest --junitxml=reports/junit.xml --html=reports/report.html --self-contained-html
 
 # Run with parallel execution for faster results
@@ -36,7 +36,7 @@ pytest -m security --html=reports/security-report.html --self-contained-html --j
 
 #### Allure Reports (Advanced Reporting)
 ```bash
-# Install Allure command line tool (one-time setup)
+# Install Allure command line tool
 # Windows: scoop install allure or choco install allure-commandline
 # macOS: brew install allure
 # Linux: npm install -g allure-commandline
@@ -56,12 +56,12 @@ python scripts/generate_allure_report.py --open --clean
 ```
 
 **Allure Report Features:**
-- 📊 **Interactive Dashboard**: Visual test results with trends and history
-- 🔍 **Detailed Test Steps**: Step-by-step execution with attachments
-- 📈 **Trends & Analytics**: Track test stability and performance over time
-- 🏷️ **Smart Categorization**: Automatic grouping by features, severity, and status
-- 📎 **Rich Attachments**: Request/response details, logs, and screenshots
-- 🚨 **Flaky Test Detection**: Identify unstable tests with trend analysis
+- **Interactive Dashboard**: Visual test results with trends and history
+- **Detailed Test Steps**: Step-by-step execution with attachments
+- **Trends & Analytics**: Track test stability and performance over time
+- **Smart Categorization**: Automatic grouping by features, severity, and status
+- **Rich Attachments**: Request/response details, logs, and screenshots
+- **Flaky Test Detection**: Identify unstable tests with trend analysis
 
 ### Running Specific Test Categories
 
@@ -88,21 +88,6 @@ pytest -m validation
 #### Performance Tests
 ```bash
 pytest -m performance
-```
-
-#### ISTQB Test Techniques
-```bash
-# Domain testing techniques (integrated in CRUD tests)
-pytest -m data_validation
-
-# Combinatorial testing techniques (integrated in CRUD tests)
-pytest -m data_validation
-
-# State transition testing techniques (integrated in CRUD tests)
-pytest -m crud
-
-# All ISTQB technique tests
-pytest -m "data_validation or crud"
 ```
 
 #### HTTP Method Specific Tests
@@ -154,34 +139,7 @@ pytest --base-url="https://your-api.com" --api-key="your-key"
 
 ## Test Strategy and Reasoning
 
-This test suite implements a comprehensive risk-based testing approach aligned with ISTQB best practices and Technical Challenge requirements. The strategy prioritizes test cases based on business impact, failure probability, user experience, and security considerations.
-
-### Test Design Techniques Applied
-
-#### 1. Equivalence Partitioning
-- **User Data Validation**: Valid, invalid, and edge case inputs
-- **HTTP Status Codes**: Success (2xx), client errors (4xx), server errors (5xx)
-- **Pagination Parameters**: Valid pages, invalid pages, edge cases
-
-#### 2. Boundary Value Analysis
-- **String Length Limits**: Empty, single character, maximum length
-- **Numeric Ranges**: Minimum, maximum, edge values
-- **Pagination Boundaries**: First page, last page, beyond available pages
-
-#### 3. State Transition Testing
-- **User Lifecycle**: Create → Read → Update → Delete workflow
-- **Authentication States**: Unauthenticated → authenticated → expired
-- **Workflow States**: Normal → error → recovery
-
-#### 4. Combinatorial Testing (Pairwise)
-- **Parameter Combinations**: Name and job field combinations
-- **Data Type Combinations**: String, numeric, boolean, null values
-- **Field Combinations**: Required fields with extra fields
-
-#### 5. Domain Testing
-- **Input Domains**: ASCII, Unicode, special characters, empty values
-- **Data Type Domains**: String, numeric, boolean, array, object
-- **Format Domains**: Valid formats, invalid formats, edge cases
+This test suite implements a comprehensive risk-based testing approach aligned with best practices and the Technical Challenge requirements. The strategy prioritizes test cases based on business impact, failure probability, user experience, and security considerations.
 
 ### Response Time Goals
 
@@ -331,7 +289,7 @@ Locust provides true concurrent multi-user load testing with realistic user beha
 #### Installation and Setup
 
 ```bash
-# Install Locust (if not already installed)
+# Install Locust
 pip install locust
 
 # Verify installation
@@ -347,7 +305,7 @@ locust -f locustfile.py --host=https://reqres.in
 # Open http://localhost:8089 in your browser for real-time monitoring
 ```
 
-**Headless Load Tests (Recommended Parameters):**
+**Headless Load Tests:**
 
 ```bash
 # Conservative load test (recommended for learning/development)
@@ -383,68 +341,6 @@ locust -f locustfile.py RealisticUsageUser --host=https://reqres.in --users=5 --
 - 2-8 second wait times simulating real user thinking time
 - Includes realistic job titles and user behavior patterns
 
-#### Understanding Rate Limiting (429 Errors)
-
-The ReqRes API implements rate limiting to prevent abuse. Understanding and working with these limits:
-
-**Rate Limiting Behavior:**
-- Approximately 5 requests per second per IP address
-- Higher tolerance for GET requests vs POST/PUT/DELETE operations
-- Stricter limits on write operations (create, update, delete)
-
-**Interpreting Results:**
-- **0-5% failure rate**: API handling load well, optimal performance zone
-- **5-15% failure rate**: API under moderate stress, acceptable for stress testing
-- **>20% failure rate**: API overwhelmed, reduce concurrent users or request rate
-
-**Strategies to Minimize Rate Limiting:**
-1. Use fewer concurrent users (3-5 instead of 10+)
-2. Implement slower spawn rates (0.5-1 user/second)
-3. Increase wait times between requests (1-3 seconds minimum)
-4. Focus on BasicLoadUser for balanced request patterns
-5. Use single user class instead of mixing multiple classes
-
-### Rate Limiting Solutions
-
-Both pytest and Locust tests include built-in rate limiting solutions:
-
-**Pytest Performance Tests:**
-- Automatic retry with exponential backoff (up to 3 retries)
-- Intelligent pacing with delays between bulk operations
-- Graceful test skipping for persistent rate limiting
-- Enhanced retry configuration for bulk operations (5 retries, longer backoff)
-
-**Locust Load Tests:**
-- Realistic wait times between user actions
-- Balanced request patterns to minimize API stress
-- Conservative default parameters to stay within rate limits
-- Clear documentation of recommended usage parameters
-
-### When to Use Which Tool
-
-**Use Pytest Performance Tests for:**
-- Functional performance validation with detailed assertions
-- CI/CD integration and automated performance regression testing
-- Development workflow performance testing with immediate feedback
-- Detailed timing analysis and performance debugging
-- Testing specific performance requirements and thresholds
-
-**Use Locust Load Tests for:**
-- True concurrent multi-user load testing scenarios
-- Capacity planning and system limit identification
-- Realistic user behavior simulation at scale
-- Interactive load testing with real-time monitoring and analysis
-- Stress testing to identify breaking points and bottlenecks
-
-### Performance Testing Best Practices
-
-1. **Start Small**: Begin with conservative parameters and gradually increase load
-2. **Monitor Results**: Watch for 429 errors and adjust parameters accordingly  
-3. **Use Appropriate Tools**: Pytest for functional validation, Locust for load testing
-4. **Understand Limits**: ReqRes is a free API with intentional rate limiting
-5. **Realistic Scenarios**: Focus on realistic usage patterns rather than maximum load
-6. **Consistent Environment**: Run tests from consistent network conditions for comparable results
-
 ## Test Data
 
 Test data is managed through JSON fixtures in `resources/data/test_users.json`:
@@ -460,11 +356,15 @@ Test data is managed through JSON fixtures in `resources/data/test_users.json`:
 Tests are organized with pytest markers for easy filtering:
 
 - `@pytest.mark.smoke`: Basic availability checks
-- `@pytest.mark.api`: API-level tests
+- `@pytest.mark.regression`: Regression tests
 - `@pytest.mark.crud`: CRUD operation tests
-- `@pytest.mark.performance`: Performance and load tests
+- `@pytest.mark.post`: POST call tests
+- `@pytest.mark.get`: GET operation tests
+- `@pytest.mark.put`: PUT operation tests
+- `@pytest.mark.delete`: DELETE operation tests
 - `@pytest.mark.negative`: Negative test cases
-- `@pytest.mark.validation`: Data validation tests
+- `@pytest.mark.data_validation`: Data validation tests
+- `@pytest.mark.performance`: Performance and load tests
 - `@pytest.mark.security`: Security and penetration tests
 - `@pytest.mark.slow`: Slow-running tests
 
@@ -527,55 +427,6 @@ pytest -m security -v
 
 # Run security tests excluding slow ones
 pytest -m "security and not slow"
-```
-
-## Security Testing
-
-### Security Test Categories
-
-#### Authentication & Authorization
-- Missing API key handling
-- Invalid API key detection
-- Token expiration simulation
-- Unauthorized access attempts
-
-#### Input Validation Security
-- XSS injection attempts
-- SQL injection protection
-- Command injection testing
-- Path traversal attacks
-- Unicode normalization attacks
-- Null byte injection
-- Oversized payload handling
-
-#### Access Control
-- User enumeration protection
-- Unauthorized modification attempts
-- Mass assignment vulnerabilities
-- Resource exhaustion attacks
-
-#### Information Security
-- Error message information disclosure
-- Security header validation
-- Response data leakage
-- Debug information exposure
-
-### Running Security Tests
-
-```bash
-# Run all security tests
-pytest -m security
-
-# Run specific security categories
-pytest -k "injection" -m security
-pytest -k "authentication" -m security
-pytest -k "access_control" -m security
-
-# Run security tests with detailed output
-pytest -m security -v -s
-
-# Generate security test report
-pytest -m security --html=reports/security_report.html
 ```
 
 ## Test Structure
@@ -681,9 +532,9 @@ jobs:
         run: pytest -m performance
 ```
 
-GitHub Actions runs tests on push and pull request, collecting JUnit, HTML, and coverage reports and uploading them as artifacts. If `CODECOV_TOKEN` is configured, coverage is also published to Codecov.
+GitHub Actions runs tests on push and pull request, collecting JUnit, HTML, and coverage reports and uploading them as artifacts.
 
-## uccess Criteria
+## Success Criteria
 
 All tests validate:
 - Correct HTTP status codes
@@ -693,16 +544,6 @@ All tests validate:
 - Error handling
 - Edge case behavior
 - Performance under load
-
-## Contributing
-
-When adding new tests:
-1. Add appropriate markers
-2. Include both positive and negative scenarios
-3. Validate response schemas
-4. Add performance considerations
-5. Update test data fixtures as needed
-6. Document any new test categories
 
 ## Notes about the API
 
