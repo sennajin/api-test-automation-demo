@@ -1,0 +1,5 @@
+Basic SLA Compliance Results:
+  GET: 0.020s / 3.0s ✓ PASS
+  POST: 0.154s / 5.0s ✓ PASS
+  PUT: 0.158s / 5.0s ✓ PASS
+  DELETE: 0.153s / 3.0s ✓ PASS
