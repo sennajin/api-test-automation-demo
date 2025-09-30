@@ -352,6 +352,16 @@ def login_endpoint(base_url: str) -> str:
     return f"{base_url}/api/login"
 
 
+@pytest.fixture(scope="session")
+def register_endpoint(base_url: str) -> str:
+    return f"{base_url}/api/register"
+
+
+@pytest.fixture(scope="session")
+def logout_endpoint(base_url: str) -> str:
+    return f"{base_url}/api/logout"
+
+
 @pytest.fixture
 def valid_credentials() -> dict[str, str]:
     """Valid login credentials for successful authentication."""

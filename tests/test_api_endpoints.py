@@ -1,23 +1,24 @@
 """
-Comprehensive CRUD (Create, Read, Update, Delete) tests for user management API.
+API endpoint tests for the ReqRes.in API.
 
-This module provides comprehensive test coverage for all CRUD operations on the user management API,
-including positive and negative test cases, edge cases, and domain validation testing.
+This module provides test coverage for all API endpoints including
+CRUD operations, authentication, and performance testing.
 
 Testing Approach:
 - **Positive Testing**: Validates successful operations with valid data
 - **Negative Testing**: Tests error handling with invalid inputs and edge cases
 - **Boundary Testing**: Validates behavior at data limits and boundaries
 - **Domain Testing**: Tests various data domains (Unicode, special characters, etc.)
-- **Idempotency Testing**: Ensures operations can be safely repeated
+- **IRepeatability Testing**: Ensures operations can be safely repeated
 - **Schema Validation**: Verifies response structure matches expected schemas
 
 Test Categories:
 - TestUserCreation: Tests user creation with various data scenarios
 - TestUserRetrieval: Tests user retrieval and pagination functionality
 - TestUserUpdate: Tests user update operations (PUT/PATCH)
-- TestUserDeletion: Tests user deletion and idempotency
-- TestUserValidation: Tests domain validation and edge cases
+- TestUserDeletion: Tests user deletion and repeatability
+- TestAuthentication: Tests login, register, and logout functionality
+- TestPerformance: Tests response time and SLA compliance
 
 Each test class is designed to be independent and can be run in isolation.
 Tests use pytest fixtures for setup and teardown, with proper error handling
@@ -38,8 +39,9 @@ from tests.schemas.json_schemas import (
     RESOURCE_LIST_SCHEMA,
     LOGIN_SUCCESS_SCHEMA,
     LOGIN_ERROR_SCHEMA,
+    REGISTER_SUCCESS_SCHEMA,
 )
-from tests.test_constants import TEST_USER_IDS, HTTP_STATUS
+from tests.test_constants import TEST_USER_IDS, HTTP_STATUS, TEST_PATTERNS
 
 
 class BaseUserTest:
@@ -92,6 +94,7 @@ class TestUserCreation(BaseUserTest):
         # ReqRes API is permissive, but we document the actual behavior
         assert response.status_code in [HTTP_STATUS["CREATED"], HTTP_STATUS["BAD_REQUEST"]]
 
+    @pytest.mark.negative
     @pytest.mark.data_validation
     def test_create_user_with_extra_fields(self, api_client, users_endpoint):
         """Test user creation with additional fields."""
@@ -107,6 +110,41 @@ class TestUserCreation(BaseUserTest):
         payload = response.json()
         expected_data = {"name": user_data["name"], "job": user_data["job"]}
         self.verify_user_data(payload, expected_data)
+
+    @pytest.mark.data_validation
+    @pytest.mark.parametrize("pattern_key,test_value", [
+        ("SPECIAL_CHARS", TEST_PATTERNS["SPECIAL_CHARS"]),
+        ("UNICODE_CHARS", TEST_PATTERNS["UNICODE_CHARS"]),
+    ])
+    def test_create_user_with_unicode_and_special_chars(self, api_client, users_endpoint, pattern_key, test_value):
+        """Test user creation with Unicode and special characters."""
+        user_data = {
+            "name": test_value,
+            "job": f"Test Job {pattern_key}"
+        }
+        response = api_client.post(users_endpoint, json=user_data, bulk_mode=True)
+        assert response.status_code == HTTP_STATUS["CREATED"]
+
+        payload = response.json()
+        assert_valid_schema(payload, CREATE_USER_SCHEMA)
+        self.verify_user_data(payload, user_data)
+
+    @pytest.mark.negative
+    def test_create_user_with_empty_string(self, api_client, users_endpoint):
+        """Test user creation with empty string (should fail validation)."""
+        user_data = {
+            "name": "",  # Empty string should fail
+            "job": "Test Job"
+        }
+        response = api_client.post(users_endpoint, json=user_data, bulk_mode=True)
+        # Empty string should either be rejected or handled gracefully
+        assert response.status_code in [HTTP_STATUS["CREATED"], HTTP_STATUS["BAD_REQUEST"]]
+        
+        if response.status_code == HTTP_STATUS["CREATED"]:
+            # If API accepts empty string, verify it's handled correctly
+            payload = response.json()
+            # Don't validate schema for this edge case as it may not meet requirements
+            print(f"API accepted empty string: {payload}")
 
 
 class TestUserRetrieval(BaseUserTest):
@@ -286,6 +324,78 @@ class TestAuthentication:
         assert_valid_schema(payload, LOGIN_ERROR_SCHEMA)
         assert payload["error"], "Expected error message for empty payload"
 
+    @pytest.mark.security
+    @pytest.mark.regression
+    @pytest.mark.smoke
+    def test_register_with_valid_data_returns_token(
+            self, api_client, register_endpoint, valid_credentials
+    ) -> None:
+        """Test successful user registration with valid email and password returns a token."""
+        response = api_client.post(register_endpoint, json=valid_credentials)
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert_valid_schema(payload, REGISTER_SUCCESS_SCHEMA)
+        assert payload["token"], "Expected token to be present and non-empty"
+        assert payload["id"], "Expected user ID to be present"
+
+    @pytest.mark.security
+    @pytest.mark.regression
+    @pytest.mark.smoke
+    def test_register_with_missing_password_returns_error(
+            self, api_client, register_endpoint, invalid_credentials
+    ) -> None:
+        """Test registration with missing password returns 400 error."""
+        response = api_client.post(register_endpoint, json=invalid_credentials)
+
+        assert response.status_code == 400
+        payload = response.json()
+        assert_valid_schema(payload, LOGIN_ERROR_SCHEMA)
+        assert "password" in payload["error"].lower(), "Error should mention missing password"
+
+    @pytest.mark.security
+    @pytest.mark.regression
+    @pytest.mark.smoke
+    def test_register_with_invalid_email_returns_error(
+            self, api_client, register_endpoint
+    ) -> None:
+        """Test registration with invalid email returns error."""
+        invalid_user_credentials = {
+            "email": "invalid-email",
+            "password": "somepassword"
+        }
+        response = api_client.post(register_endpoint, json=invalid_user_credentials)
+
+        assert response.status_code == 400
+        payload = response.json()
+        assert_valid_schema(payload, LOGIN_ERROR_SCHEMA)
+        assert payload["error"], "Expected error message to be present"
+
+    @pytest.mark.security
+    @pytest.mark.regression
+    def test_register_with_empty_payload_returns_error(
+            self, api_client, register_endpoint
+    ) -> None:
+        """Test registration with empty JSON payload returns error."""
+        response = api_client.post(register_endpoint, json={})
+
+        assert response.status_code == 400
+        payload = response.json()
+        assert_valid_schema(payload, LOGIN_ERROR_SCHEMA)
+        assert payload["error"], "Expected error message for empty payload"
+
+    @pytest.mark.security
+    @pytest.mark.regression
+    @pytest.mark.smoke
+    def test_logout_returns_success(
+            self, api_client, logout_endpoint
+    ) -> None:
+        """Test logout endpoint returns success."""
+        response = api_client.post(logout_endpoint)
+
+        assert response.status_code == 200
+        # Logout endpoint typically returns 200 OK with no content or minimal response
+
 
 class TestPerformance:
     """Tests for performance and response time validation."""
@@ -341,6 +451,45 @@ class TestPerformance:
         xfail_if_rate_limited(response, "delete user")
         
         assert response.status_code == 204
+        assert response_time < 2.0, f"Response time {response_time:.2f}s exceeds 2s threshold"
+
+    @pytest.mark.performance
+    def test_login_response_time(self, api_client, login_endpoint, valid_credentials):
+        """Test that login responds within acceptable time."""
+        import time
+        start_time = time.time()
+        response = api_client.post(login_endpoint, json=valid_credentials, retry=False)
+        response_time = time.time() - start_time
+        
+        xfail_if_rate_limited(response, "login")
+        
+        assert response.status_code == 200
+        assert response_time < 2.0, f"Response time {response_time:.2f}s exceeds 2s threshold"
+
+    @pytest.mark.performance
+    def test_register_response_time(self, api_client, register_endpoint, valid_credentials):
+        """Test that registration responds within acceptable time."""
+        import time
+        start_time = time.time()
+        response = api_client.post(register_endpoint, json=valid_credentials, retry=False)
+        response_time = time.time() - start_time
+        
+        xfail_if_rate_limited(response, "register")
+        
+        assert response.status_code == 200
+        assert response_time < 2.0, f"Response time {response_time:.2f}s exceeds 2s threshold"
+
+    @pytest.mark.performance
+    def test_logout_response_time(self, api_client, logout_endpoint):
+        """Test that logout responds within acceptable time."""
+        import time
+        start_time = time.time()
+        response = api_client.post(logout_endpoint, retry=False)
+        response_time = time.time() - start_time
+        
+        xfail_if_rate_limited(response, "logout")
+        
+        assert response.status_code == 200
         assert response_time < 2.0, f"Response time {response_time:.2f}s exceeds 2s threshold"
 
     @pytest.mark.performance

@@ -5,10 +5,6 @@ from enum import IntEnum
 from typing import Dict, List, Final, TypedDict
 
 
-# Version tracking for configuration changes
-CONFIG_VERSION: Final[str] = "1.0.0"
-
-
 # Type definitions for better IDE support
 class UserIdConfig(TypedDict):
     EXISTING_USER: int
@@ -25,20 +21,6 @@ class PerformanceConfig(TypedDict):
     BULK_OPERATIONS: int
 
 
-class PatternConfig(TypedDict, total=False):
-    LONG_STRING: str
-    EMPTY_STRING: str
-    SPECIAL_CHARS: str
-    UNICODE_CHARS: str
-    NUMERIC_STRING: str
-
-
-class PaginationConfig(TypedDict):
-    DEFAULT_PAGE: int
-    TEST_PAGES: List[int]
-    INVALID_PAGE: str
-
-
 class TimeoutConfig(TypedDict):
     DEFAULT: float
     FAST: float
@@ -50,14 +32,6 @@ class RetryConfig(TypedDict):
     BACKOFF_FACTOR: float
     RETRY_STATUS_CODES: List[int]
     MAX_BACKOFF: float
-
-
-class SanitizationPatternsConfig(TypedDict):
-    HTML_TAGS: str
-    SQL_INJECTION: str
-    SCRIPT_INJECTION: str
-    PATH_TRAVERSAL: str
-    COMMAND_INJECTION: str
 
 
 # Use enum for HTTP status codes for better type safety and code completion
@@ -105,33 +79,19 @@ PERFORMANCE_THRESHOLDS: Final[PerformanceConfig] = {
     "BULK_OPERATIONS": PerformanceThresholds.BULK_OPERATIONS,
 }
 
-# Common test data patterns
-TEST_PATTERNS: Final[PatternConfig] = {
-    # 1000 chars to test handling of long string inputs (chosen to exceed typical
-    # VARCHAR limits in databases while staying under request size limits)
-    "LONG_STRING": "x" * 1000,
-    "EMPTY_STRING": "",  # Test handling of empty inputs
+# Test data patterns for Unicode and special character testing
+TEST_PATTERNS: Final[Dict[str, str]] = {
     "SPECIAL_CHARS": "José María O'Connor-Smith",  # Test handling of accents and special chars
     "UNICODE_CHARS": "张三李四",  # Test handling of non-Latin characters
-    "NUMERIC_STRING": "12345",  # Test handling of numeric strings vs integers
-}
-
-# Pagination defaults
-PAGINATION_DEFAULTS: Final[PaginationConfig] = {
-    "DEFAULT_PAGE": 1,
-    "TEST_PAGES": [1, 2, 3],  # Common pages to test pagination functionality
-    "INVALID_PAGE": "invalid",  # String value to test type validation for page parameter
-}
-
-# Environment-specific timeout configurations
-ENV_SPECIFIC_TIMEOUTS: Dict[str, TimeoutConfig] = {
-    "local": {"DEFAULT": 10.0, "FAST": 5.0, "SLOW": 30.0},
-    "ci": {"DEFAULT": 30.0, "FAST": 10.0, "SLOW": 60.0},
-    "staging": {"DEFAULT": 45.0, "FAST": 15.0, "SLOW": 90.0},
+    "EMPTY_STRING": "",  # Test handling of empty inputs
 }
 
 # Default test timeouts (in seconds)
-TIMEOUTS: Final[TimeoutConfig] = ENV_SPECIFIC_TIMEOUTS["ci"]  # Default to CI environment
+TIMEOUTS: Final[TimeoutConfig] = {
+    "DEFAULT": 30.0,
+    "FAST": 10.0,
+    "SLOW": 60.0,
+}
 
 
 # Retry configuration for rate limiting
@@ -164,20 +124,3 @@ BULK_RETRY_CONFIG: Final[RetryConfig] = {
     "MAX_BACKOFF": 60.0,  # Longer maximum wait for bulk operations
 }
 
-# Patterns for testing input sanitization
-SANITIZATION_PATTERNS: Final[SanitizationPatternsConfig] = {
-    "HTML_TAGS": "<script>alert('XSS')</script>",
-    "SQL_INJECTION": "' OR '1'='1",
-    "SCRIPT_INJECTION": "javascript:alert(document.cookie)",
-    "PATH_TRAVERSAL": "../../../etc/passwd",
-    "COMMAND_INJECTION": "$(cat /etc/passwd)"
-}
-
-# Expected security headers in responses
-EXPECTED_SECURITY_HEADERS: Final[List[str]] = [
-    "X-Content-Type-Options",
-    "X-Frame-Options",
-    "Content-Security-Policy",
-    "Strict-Transport-Security",
-    "X-XSS-Protection"
-]

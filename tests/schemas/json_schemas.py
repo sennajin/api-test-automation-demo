@@ -228,6 +228,26 @@ LOGIN_SUCCESS_SCHEMA = {
     "additionalProperties": False,
 }
 
+# Register success schema (includes id field)
+REGISTER_SUCCESS_SCHEMA = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "User ID"
+        },
+        "token": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Authentication token"
+        },
+    },
+    "required": ["id", "token"],
+    "additionalProperties": False,
+}
+
 # Reuse base error schema instead of duplicating
 LOGIN_ERROR_SCHEMA = BASE_ERROR_SCHEMA
 
