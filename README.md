@@ -1,6 +1,6 @@
 # API Testing Automation Framework
 
-A comprehensive pytest-based API testing framework for RESTful APIs, with a focus on the ReqRes.in API. This framework provides extensive test coverage for API endpoints, including functional, performance, and security testing.
+A streamlined pytest-based API testing framework for RESTful APIs, with a focus on the ReqRes.in API. This framework provides focused test coverage for core API functionality, including CRUD operations, authentication, and performance testing.
 
 ## Features
 
@@ -251,6 +251,8 @@ The framework includes comprehensive test data management:
 
 This strategy ensures that the API is tested from multiple perspectives, providing confidence in both its functional correctness and non-functional characteristics like performance, security, and reliability.
 
-## License
+## Test Report Output Examples
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+### CLI Test Runs:
+---
+

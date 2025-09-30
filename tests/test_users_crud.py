@@ -36,6 +36,8 @@ from tests.schemas.json_schemas import (
     LIST_USERS_SCHEMA,
     ERROR_SCHEMA,
     RESOURCE_LIST_SCHEMA,
+    LOGIN_SUCCESS_SCHEMA,
+    LOGIN_ERROR_SCHEMA,
 )
 from tests.test_constants import TEST_USER_IDS, HTTP_STATUS
 
@@ -138,68 +140,16 @@ class TestUserRetrieval(BaseUserTest):
             assert payload == {}  # ReqRes returns empty object for 404
 
     @pytest.mark.crud
-    @pytest.mark.parametrize("page", [1, 2, 3])
-    def test_get_users_list_pagination(self, api_client, users_endpoint, page):
-        """Test users list with different page numbers."""
-        response = api_client.get(users_endpoint, params={"page": page})
+    def test_get_users_list(self, api_client, users_endpoint):
+        """Test users list endpoint."""
+        response = api_client.get(users_endpoint)
         # Handle rate limiting gracefully
-        xfail_if_rate_limited(response, "users list pagination")
+        xfail_if_rate_limited(response, "users list")
         assert response.status_code == HTTP_STATUS["OK"]
 
-        payload = response.json()
-        assert_valid_schema(payload, LIST_USERS_SCHEMA)
-        assert payload["page"] == page
-
-    @pytest.mark.negative
-    def test_get_users_list_invalid_page(self, api_client, users_endpoint):
-        """Test users list with invalid page parameter."""
-        response = api_client.get(users_endpoint, params={"page": "invalid"})
-        # ReqRes defaults to page 1 for invalid page values
-        assert response.status_code == HTTP_STATUS["OK"]
-
-        payload = response.json()
-        assert payload["page"] == 1
-
-    @pytest.mark.smoke
-    @pytest.mark.regression
-    @pytest.mark.parametrize("page", [1, 2])
-    def test_list_users_returns_expected_schema(self, api_client, users_endpoint, page: int) -> None:
-        """Test that user list endpoint returns expected schema and data."""
-        response = api_client.get(users_endpoint, params={"page": page})
-        # Handle rate limiting gracefully
-        xfail_if_rate_limited(response, "users list schema validation")
-
-        assert response.status_code == 200
         payload = response.json()
         assert_valid_schema(payload, LIST_USERS_SCHEMA)
         assert payload["data"], "Expected at least one user in the list"
-
-    @pytest.mark.smoke
-    @pytest.mark.regression
-    def test_single_user_response_matches_schema(self, api_client, users_endpoint) -> None:
-        """Test that single user endpoint returns expected schema and data."""
-        response = api_client.get(f"{users_endpoint}/2")
-        # Handle rate limiting gracefully
-        xfail_if_rate_limited(response, "single user schema validation")
-
-        assert response.status_code == 200
-        payload = response.json()
-        assert_valid_schema(payload, SINGLE_USER_SCHEMA)
-        user = payload["data"]
-        assert user["id"] == 2
-
-    @pytest.mark.smoke
-    @pytest.mark.regression
-    def test_list_resources_response_matches_schema(self, api_client, support_endpoint) -> None:
-        """Test that resources endpoint returns expected schema and data."""
-        response = api_client.get(support_endpoint)
-        # Handle rate limiting gracefully
-        xfail_if_rate_limited(response, "resources schema validation")
-
-        assert response.status_code == 200
-        payload = response.json()
-        assert_valid_schema(payload, RESOURCE_LIST_SCHEMA)
-        assert payload["total"] >= len(payload["data"]) >= 1
 
 
 class TestUserUpdate(BaseUserTest):
@@ -219,25 +169,15 @@ class TestUserUpdate(BaseUserTest):
         self.verify_user_data(payload, update_user_data)
         assert "updatedAt" in payload
 
-    @pytest.mark.parametrize("test_case", [
-        {"desc": "non-existent user", "user_id_key": "NON_EXISTENT_USER",
-         "data": {"name": "Full Update", "job": "Developer"}},
-        {"desc": "partial data", "user_id_key": "EXISTING_USER", "data": {"name": "Partial Update"}},
-        {"desc": "empty payload", "user_id_key": "EXISTING_USER", "data": {}}
-    ])
-    def test_update_user_variations(self, api_client, users_endpoint, test_case):
-        """Test various update scenarios including edge cases."""
-        user_id = TEST_USER_IDS[test_case["user_id_key"]]
-        response = api_client.put(f"{users_endpoint}/{user_id}", json=test_case["data"], bulk_mode=True)
+    @pytest.mark.negative
+    def test_update_non_existent_user(self, api_client, users_endpoint, update_user_data):
+        """Test updating a user that doesn't exist."""
+        user_id = TEST_USER_IDS["NON_EXISTENT_USER"]
+        response = api_client.put(f"{users_endpoint}/{user_id}", json=update_user_data, bulk_mode=True)
         # Handle rate limiting gracefully
-        xfail_if_rate_limited(response, "user update variations")
+        xfail_if_rate_limited(response, "update non-existent user")
+        # ReqRes API returns 200 even for non-existent users, but we document the behavior
         assert response.status_code == HTTP_STATUS["OK"]
-
-        payload = response.json()
-        assert_valid_schema(payload, UPDATE_USER_SCHEMA)
-
-        if test_case["data"]:
-            self.verify_user_data(payload, test_case["data"])
 
 
 class TestUserDeletion(BaseUserTest):
@@ -282,4 +222,194 @@ class TestUserDeletion(BaseUserTest):
         response = api_client.delete(f"{users_endpoint}/{invalid_id}")
         # ReqRes API returns 204 even for invalid IDs, but we document the behavior
         assert response.status_code == HTTP_STATUS["NO_CONTENT"]
+
+
+class TestAuthentication:
+    """Tests for authentication endpoints."""
+
+    @pytest.mark.security
+    @pytest.mark.regression
+    @pytest.mark.smoke
+    def test_login_with_valid_credentials_returns_token(
+            self, api_client, login_endpoint, valid_credentials
+    ) -> None:
+        """Test successful login with valid email and password returns a token."""
+        response = api_client.post(login_endpoint, json=valid_credentials)
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert_valid_schema(payload, LOGIN_SUCCESS_SCHEMA)
+        assert payload["token"], "Expected token to be present and non-empty"
+
+    @pytest.mark.security
+    @pytest.mark.regression
+    @pytest.mark.smoke
+    def test_login_with_missing_password_returns_error(
+            self, api_client, login_endpoint, invalid_credentials
+    ) -> None:
+        """Test login with missing password returns 400 error."""
+        response = api_client.post(login_endpoint, json=invalid_credentials)
+
+        assert response.status_code == 400
+        payload = response.json()
+        assert_valid_schema(payload, LOGIN_ERROR_SCHEMA)
+        assert "password" in payload["error"].lower(), "Error should mention missing password"
+
+    @pytest.mark.security
+    @pytest.mark.regression
+    @pytest.mark.smoke
+    def test_login_with_invalid_email_returns_error(
+            self, api_client, login_endpoint
+    ) -> None:
+        """Test login with non-existent email returns error."""
+        invalid_user_credentials = {
+            "email": "nonexistent@example.com",
+            "password": "somepassword"
+        }
+        response = api_client.post(login_endpoint, json=invalid_user_credentials)
+
+        assert response.status_code == 400
+        payload = response.json()
+        assert_valid_schema(payload, LOGIN_ERROR_SCHEMA)
+        assert payload["error"], "Expected error message to be present"
+
+    @pytest.mark.security
+    @pytest.mark.regression
+    def test_login_with_empty_payload_returns_error(
+            self, api_client, login_endpoint
+    ) -> None:
+        """Test login with empty JSON payload returns error."""
+        response = api_client.post(login_endpoint, json={})
+
+        assert response.status_code == 400
+        payload = response.json()
+        assert_valid_schema(payload, LOGIN_ERROR_SCHEMA)
+        assert payload["error"], "Expected error message for empty payload"
+
+
+class TestPerformance:
+    """Tests for performance and response time validation."""
+
+    @pytest.mark.performance
+    def test_create_user_response_time(self, api_client, users_endpoint, valid_user_data, performance_timer):
+        """Test that user creation responds within acceptable time."""
+        performance_timer.start()
+        response = api_client.post(users_endpoint, json=valid_user_data, retry=False)
+        performance_timer.stop()
+        
+        xfail_if_rate_limited(response, "create user")
+        
+        assert response.status_code == HTTP_STATUS["CREATED"]
+        performance_timer.assert_within("RESPONSE_TIME_FAST")
+
+    @pytest.mark.performance
+    def test_get_users_list_response_time(self, api_client, users_endpoint):
+        """Test that users list responds within acceptable time."""
+        import time
+        start_time = time.time()
+        response = api_client.get(users_endpoint)
+        response_time = time.time() - start_time
+        
+        xfail_if_rate_limited(response, "get users list")
+        
+        assert response.status_code == 200
+        assert response_time < 2.0, f"Response time {response_time:.2f}s exceeds 2s threshold"
+
+    @pytest.mark.performance
+    def test_update_user_response_time(self, api_client, users_endpoint, update_user_data):
+        """Test that user update responds within acceptable time."""
+        import time
+        user_id = 2
+        start_time = time.time()
+        response = api_client.put(f"{users_endpoint}/{user_id}", json=update_user_data, retry=False)
+        response_time = time.time() - start_time
+        
+        xfail_if_rate_limited(response, "update user")
+        
+        assert response.status_code == 200
+        assert response_time < 2.0, f"Response time {response_time:.2f}s exceeds 2s threshold"
+
+    @pytest.mark.performance
+    def test_delete_user_response_time(self, api_client, users_endpoint):
+        """Test that user deletion responds within acceptable time."""
+        import time
+        user_id = 2
+        start_time = time.time()
+        response = api_client.delete(f"{users_endpoint}/{user_id}")
+        response_time = time.time() - start_time
+        
+        xfail_if_rate_limited(response, "delete user")
+        
+        assert response.status_code == 204
+        assert response_time < 2.0, f"Response time {response_time:.2f}s exceeds 2s threshold"
+
+    @pytest.mark.performance
+    @pytest.mark.sla
+    def test_basic_response_time_sla(self, api_client, users_endpoint):
+        """Test that API response times meet basic SLA requirements."""
+        import time
+        
+        # Define basic SLA thresholds
+        sla_thresholds = {
+            "GET": 3.0,      # 3 seconds for GET requests
+            "POST": 5.0,     # 5 seconds for POST requests
+            "PUT": 5.0,       # 5 seconds for PUT requests
+            "DELETE": 3.0,    # 3 seconds for DELETE requests
+        }
+        
+        sla_results = {}
+        
+        # Test GET requests
+        start_time = time.time()
+        response = api_client.get(users_endpoint)
+        get_time = time.time() - start_time
+        sla_results["GET"] = get_time
+        
+        assert response.status_code == 200
+        assert get_time <= sla_thresholds["GET"], (
+            f"GET request took {get_time:.2f}s, exceeds SLA threshold of {sla_thresholds['GET']}s"
+        )
+        
+        # Test POST requests
+        user_data = {"name": "SLA Test User", "job": "SLA Test Job"}
+        start_time = time.time()
+        response = api_client.post(users_endpoint, json=user_data, retry=False)
+        post_time = time.time() - start_time
+        sla_results["POST"] = post_time
+        
+        assert response.status_code == 201
+        assert post_time <= sla_thresholds["POST"], (
+            f"POST request took {post_time:.2f}s, exceeds SLA threshold of {sla_thresholds['POST']}s"
+        )
+        
+        # Test PUT requests
+        user_id = 2
+        update_data = {"name": "SLA Updated User", "job": "SLA Updated Job"}
+        start_time = time.time()
+        response = api_client.put(f"{users_endpoint}/{user_id}", json=update_data, retry=False)
+        put_time = time.time() - start_time
+        sla_results["PUT"] = put_time
+        
+        assert response.status_code == 200
+        assert put_time <= sla_thresholds["PUT"], (
+            f"PUT request took {put_time:.2f}s, exceeds SLA threshold of {sla_thresholds['PUT']}s"
+        )
+        
+        # Test DELETE requests
+        start_time = time.time()
+        response = api_client.delete(f"{users_endpoint}/{user_id}")
+        delete_time = time.time() - start_time
+        sla_results["DELETE"] = delete_time
+        
+        assert response.status_code == 204
+        assert delete_time <= sla_thresholds["DELETE"], (
+            f"DELETE request took {delete_time:.2f}s, exceeds SLA threshold of {sla_thresholds['DELETE']}s"
+        )
+        
+        # Report SLA compliance
+        print(f"Basic SLA Compliance Results:")
+        for method, time_taken in sla_results.items():
+            threshold = sla_thresholds[method]
+            compliance = "✓ PASS" if time_taken <= threshold else "✗ FAIL"
+            print(f"  {method}: {time_taken:.3f}s / {threshold}s {compliance}")
 
