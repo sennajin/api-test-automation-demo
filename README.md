@@ -84,9 +84,12 @@ pytest -n 4     # Use 4 CPU cores
 
 ### Performance Testing
 
-Run performance tests with Locust:
+The framework includes performance testing capabilities:
 
 ```bash
+# Run pytest performance tests
+pytest -m performance
+
 # Basic load test (10 users, 2 users/second spawn rate, 60 second test)
 locust -f perf/locustfile.py --host=https://reqres.in --users=10 --spawn-rate=2 --run-time=60s --headless
 
@@ -95,15 +98,6 @@ locust -f perf/locustfile.py BasicLoadUser --host=https://reqres.in --users=50 -
 
 # Web UI for interactive testing
 locust -f perf/locustfile.py --host=https://reqres.in
-```
-
-### Advanced Performance Testing
-
-The framework includes sophisticated performance testing capabilities:
-
-```bash
-# Run pytest performance tests
-pytest -m performance
 
 # Run Locust with CSV output for Allure integration
 locust -f perf/locustfile.py --host=https://reqres.in --users=10 --spawn-rate=2 --run-time=60s --headless --csv=locust_results --html=locust-report.html
@@ -129,7 +123,7 @@ allure open reports/allure-report
 
 ### CI/CD Reporting
 
-The project includes a comprehensive GitHub Actions workflow that:
+The project includes a GitHub Actions workflow that:
 - Runs tests on Python 3.12
 - Executes both pytest and Locust performance tests
 - Generates combined Allure reports from both test types
@@ -152,21 +146,12 @@ To enable GitHub Pages for your repository:
 3. Select "GitHub Actions" as the source
 4. The workflow will automatically deploy the Allure reports to GitHub Pages
 
-## Test Categories
-
-The framework includes the following test categories in `test_api_endpoints.py`:
-
-- **CRUD Tests**: Create, Read, Update, Delete operations with valid and invalid data
-- **Authentication Tests**: Login, Register, and Logout functionality with valid credentials and error handling
-- **Performance Tests**: Response time tracking and basic SLA compliance testing
-- **Data Validation Tests**: Schema validation and data integrity tests
-- **Negative Testing**: Missing fields, extra fields, delete twice, update non-existent user
 
 ## Test Strategy and Reasoning
 
-The streamlined testing strategy focuses on core API functionality with a simplified, maintainable approach:
+The testing strategy focuses on core API functionality with a simplified, maintainable approach:
 
-### Focused Test Coverage
+### Test Coverage
 The test selection strategy prioritizes:
 
 1. **Core Functionality**: Essential CRUD operations (Create, Read, Update, Delete)
@@ -198,15 +183,8 @@ The framework uses focused markers for test categorization:
 @pytest.mark.regression      # Regression tests
 ```
 
-This streamlined approach provides:
-- **Easier maintenance** with all tests in one organized file
-- **Faster execution** with focused test coverage
-- **Clear organization** with logical test grouping
-- **Flexible execution** with targeted test runs
-
-
-### Performance Testing Philosophy
-The streamlined performance testing approach focuses on:
+### Performance Testing
+The performance testing approach focuses on:
 - **Response Time Tracking**: Individual operation response time validation
 - **SLA Compliance**: Basic performance threshold testing
 - **Locust Integration**: Optional load testing for advanced scenarios
@@ -241,7 +219,6 @@ The framework has been streamlined to focus on core requirements:
 ### Single Test File: `test_api_endpoints.py`
 - **30 tests** covering all core requirements
 - **3 organized test classes**: CRUD, Authentication, Performance
-- **70% reduction** in code complexity while maintaining 100% requirement coverage
 
 ### Test Coverage Summary
 - **Successful responses** with valid data (8 tests)
@@ -251,14 +228,16 @@ The framework has been streamlined to focus on core requirements:
 - **Unicode and special character testing** (3 tests)
 - **Basic performance tests** with SLA compliance (1 comprehensive test)
 
-### Key Benefits
-- **Simplified maintenance**: All tests in one organized file
-- **Faster execution**: Removed complex, time-consuming tests
-- **Clear organization**: Logical grouping by functionality
-
 
 ## Test Report Output Examples
 
 ### CLI Test Runs:
 ---
+![A test run with Failures and a test run that Succeeded](assets\img\test_api_endpoints_cli.png)
 
+### Allure Test Reports:
+![Allure test report dashboard](assets\img\allure_dashboard.png)
+
+![Allure test report graphs](assets\img\allure_graphs.png)
+
+![Allure test report suite details](assets\img\allure_suites.png)
