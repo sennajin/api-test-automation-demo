@@ -94,10 +94,8 @@ def convert_locust_to_allure(csv_file: str, output_dir: str) -> bool:
         
         # Write Allure results
         for result in results:
-            result_dir = Path(output_dir) / result['uuid']
-            result_dir.mkdir(parents=True, exist_ok=True)
-            
-            with open(result_dir / 'result.json', 'w') as f:
+            result_path = Path(output_dir) / f"{result['uuid']}-result.json"
+            with open(result_path, 'w') as f:
                 json.dump(result, f, indent=2)
         
         print(f"Converted {len(results)} Locust results to Allure format")
