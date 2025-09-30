@@ -81,6 +81,9 @@ Run tests in parallel:
 pytest -n auto  # Use all available CPU cores
 pytest -n 4     # Use 4 CPU cores
 ```
+### CLI Test Runs:
+---
+![A test run with Failures and a test run that Succeeded](assets\img\test_api_endpoints_cli.png)
 
 ### Performance Testing
 
@@ -96,9 +99,6 @@ locust -f perf/locustfile.py --host=https://reqres.in --users=10 --spawn-rate=2 
 # High concurrency test (50 users, 5 users/second spawn rate, 120 second test)
 locust -f perf/locustfile.py BasicLoadUser --host=https://reqres.in --users=50 --spawn-rate=5 --run-time=120s --headless
 
-# Web UI for interactive testing
-locust -f perf/locustfile.py --host=https://reqres.in
-
 # Run Locust with CSV output for Allure integration
 locust -f perf/locustfile.py --host=https://reqres.in --users=10 --spawn-rate=2 --run-time=60s --headless --csv=locust_results --html=locust-report.html
 
@@ -106,20 +106,7 @@ locust -f perf/locustfile.py --host=https://reqres.in --users=10 --spawn-rate=2 
 python scripts/locust_to_allure.py --csv-file locust_results_stats.csv --output-dir allure-results
 ```
 
-## Reporting
-
-### Local Reporting
-
-Generate and view Allure reports locally:
-
-```bash
-# Run tests with Allure reporting
-pytest --alluredir=reports/allure-results
-
-# Generate and open Allure report (requires Allure CLI)
-allure generate reports/allure-results -o reports/allure-report --clean
-allure open reports/allure-report
-```
+![Locusts tests run in CLI](assets\img\locust_tests.png)
 
 ### CI/CD Reporting
 
@@ -138,14 +125,23 @@ The project includes a GitHub Actions workflow that:
 - **Historical Tracking**: Maintains test history across runs
 - **Artifact Management**: Stores test artifacts and reports
 
-The Allure reports are available at: `https://<username>.github.io/<repository>/`
+Generate and view Allure reports locally:
 
-To enable GitHub Pages for your repository:
-1. Go to your repository settings
-2. Navigate to the "Pages" section
-3. Select "GitHub Actions" as the source
-4. The workflow will automatically deploy the Allure reports to GitHub Pages
+```bash
+# Run tests with Allure reporting
+pytest --alluredir=reports/allure-results
 
+# Generate and open Allure report (requires Allure CLI)
+allure generate reports/allure-results -o reports/allure-report --clean
+allure open reports/allure-report
+```
+
+### Allure Test Reports:
+![Allure test report dashboard](assets\img\allure_dashboard.png)
+
+![Allure test report graphs](assets\img\allure_graphs.png)
+
+![Allure test report suite details](assets\img\allure_suites.png)
 
 ## Test Strategy and Reasoning
 
@@ -201,43 +197,3 @@ The custom API client includes retry logic to:
 - Handle transient failures gracefully
 - Prevent false test failures due to network issues or rate limiting
 - Simulate real-world client behavior with exponential backoff
-
-### Test Data Strategy
-The streamlined framework includes focused test data management:
-- **Valid Data**: Standard test cases for positive scenarios
-- **Invalid Data**: Missing fields, extra fields, and boundary testing
-- **Authentication Data**: Valid and invalid credentials
-- **Performance Data**: Response time measurement data
-- **Update Data**: Specific data for update operations
-
-This focused strategy ensures the API is tested for core functionality while maintaining simplicity and ease of maintenance.
-
-## Streamlined Test Structure
-
-The framework has been streamlined to focus on core requirements:
-
-### Single Test File: `test_api_endpoints.py`
-- **30 tests** covering all core requirements
-- **3 organized test classes**: CRUD, Authentication, Performance
-
-### Test Coverage Summary
-- **Successful responses** with valid data (8 tests)
-- **Invalid data failures** with appropriate error handling (10 tests)
-- **Response time tracking** for all operations (7 tests)
-- **Data validation** with schema verification (all tests)
-- **Unicode and special character testing** (3 tests)
-- **Basic performance tests** with SLA compliance (1 comprehensive test)
-
-
-## Test Report Output Examples
-
-### CLI Test Runs:
----
-![A test run with Failures and a test run that Succeeded](assets\img\test_api_endpoints_cli.png)
-
-### Allure Test Reports:
-![Allure test report dashboard](assets\img\allure_dashboard.png)
-
-![Allure test report graphs](assets\img\allure_graphs.png)
-
-![Allure test report suite details](assets\img\allure_suites.png)
