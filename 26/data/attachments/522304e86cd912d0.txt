@@ -1,0 +1,1 @@
+API accepted empty string: {'name': '', 'job': 'Test Job', 'id': '859', 'createdAt': '2025-10-01T03:15:41.904Z'}
