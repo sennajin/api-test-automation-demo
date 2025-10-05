@@ -2,7 +2,7 @@
 
 A pytest-based API testing framework for RESTful APIs, with a focus on the ReqRes.in API. This framework provides test coverage for core API functionality, including CRUD operations, authentication, and performance testing.
 
-# 👉 **[CLICK HERE FOR TEST REPORTS](https://sennajin.github.io/api_technical_challenge/index.html)** 👈
+# 👉 **[CLICK HERE FOR TEST REPORTS](https://sennajin.github.io/api_test_automation_demo/index.html)** 👈
 
 ## Features
 
@@ -85,7 +85,7 @@ pytest -n 4     # Use 4 CPU cores
 ```
 ### CLI Test Runs:
 ---
-![A test run with Failures and a test run that Succeeded](https://github.com/sennajin/api_technical_challenge/blob/main/assets/img/test_api_endpoints_cli.png)
+![A test run with Failures and a test run that Succeeded](https://github.com/sennajin/api_test_automation_demo/blob/main/assets/img/test_api_endpoints_cli.png)
 
 ### Performance Testing
 
@@ -108,7 +108,7 @@ locust -f perf/locustfile.py --host=https://reqres.in --users=10 --spawn-rate=2 
 python scripts/locust_to_allure.py --csv-file locust_results_stats.csv --output-dir allure-results
 ```
 
-![Locusts tests run in CLI](https://github.com/sennajin/api_technical_challenge/blob/main/assets/img/locust_tests.png)
+![Locusts tests run in CLI](https://github.com/sennajin/api_test_automation_demo/blob/main/assets/img/locust_tests.png)
 
 ### CI/CD Reporting
 
@@ -139,11 +139,11 @@ allure open reports/allure-report
 ```
 
 ### Allure Test Reports:
-![Allure test report dashboard](https://github.com/sennajin/api_technical_challenge/blob/main/assets/img/allure_dashboard.png)
+![Allure test report dashboard](https://github.com/sennajin/api_test_automation_demo/blob/main/assets/img/allure_dashboard.png)
 
-![Allure test report graphs](https://github.com/sennajin/api_technical_challenge/blob/main/assets/img/allure_graphs.png)
+![Allure test report graphs](https://github.com/sennajin/api_test_automation_demo/blob/main/assets/img/allure_graphs.png)
 
-![Allure test report suite details](https://github.com/sennajin/api_technical_challenge/blob/main/assets/img/allure_suites.png)
+![Allure test report suite details](https://github.com/sennajin/api_test_automation_demo/blob/main/assets/img/allure_suites.png)
 
 ## Test Strategy and Reasoning
 
