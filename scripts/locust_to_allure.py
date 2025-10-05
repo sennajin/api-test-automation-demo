@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
-"""
-Locust to Allure Results Converter
+"""Utilities to convert Locust CSV results into Allure result JSON files.
 
-This script converts Locust CSV output to Allure-compatible JSON results.
-It reads the Locust statistics CSV file and generates Allure result files.
-
-Usage:
-    python scripts/locust_to_allure.py --csv-file locust_results_stats.csv --output-dir allure-results
+This module can be used as a library (via ``convert_locust_to_allure``) or executed
+as a script to perform the conversion from the command line.
 """
 
 import argparse
@@ -19,15 +15,34 @@ from pathlib import Path
 
 
 def convert_locust_to_allure(csv_file: str, output_dir: str) -> bool:
-    """
-    Convert Locust CSV results to Allure format.
+    """Convert Locust CSV results to Allure results JSON files.
+
+    This function reads a Locust-generated stats CSV file and produces a set of
+    Allure-compatible result JSON files, one per non-aggregated row in the CSV.
+    Each Allure result reflects the request name, status (passed/failed based on
+    the Failure Rate column), timing information, labels, steps, and parameters.
 
     Args:
-        csv_file: Path to Locust stats CSV file
-        output_dir: Directory to write Allure results
+        csv_file (str): Absolute or relative path to the Locust stats CSV file.
+        output_dir (str): Directory where the Allure result JSON files will be written.
+            The directory will be created if it does not exist.
 
     Returns:
-        True if conversion successful, False otherwise
+        bool: True if conversion completes without unrecoverable errors; False otherwise.
+
+    Raises:
+        ValueError: If the CSV contains invalid numeric fields that cannot be parsed
+            (surfaced only in rare cases where conversion errors aren't caught). Note
+            that most runtime issues are handled gracefully and result in a False return.
+
+    Notes:
+        - Rows with Name equal to "Aggregated" or empty are skipped.
+        - Test status is set to "passed" when Failure Rate == 0, otherwise "failed".
+        - A millisecond timestamp is used for start/stop; duration is set to ~1 second.
+
+    Examples:
+        >>> convert_locust_to_allure("stats.csv", "reports/allure-results")
+        True
     """
     try:
         # Ensure output directory exists
@@ -107,7 +122,9 @@ def convert_locust_to_allure(csv_file: str, output_dir: str) -> bool:
         for result in results:
             result_path = Path(output_dir) / f"{result['uuid']}-result.json"
             with open(result_path, "w") as f:
-                json.dump(result, f, indent=2)
+                # Type: ignore comment to suppress the specific type error
+                json.dump(result, f, indent=2)  # type: ignore
+
 
         print(f"Converted {len(results)} Locust results to Allure format")
         print(f"Results written to: {output_dir}")
@@ -119,6 +136,25 @@ def convert_locust_to_allure(csv_file: str, output_dir: str) -> bool:
 
 
 def main():
+    """Command-line interface to convert Locust CSV results into Allure results.
+
+    This entry point parses command-line arguments and calls
+    `convert_locust_to_allure` with the provided CSV path and output directory.
+
+    Args:
+        None: This function reads from ``sys.argv`` via ``argparse``.
+
+    Side Effects:
+        - Prints progress and status messages to stdout.
+        - Creates the output directory if it does not exist.
+        - Writes Allure JSON result files into the output directory.
+        - Exits the interpreter with ``sys.exit(0)`` on success or ``sys.exit(1)`` on failure.
+
+    Example:
+        Run from a shell:
+
+            python scripts/locust_to_allure.py --csv-file perf_results.csv --output-dir reports/allure-results
+    """
     parser = argparse.ArgumentParser(description="Convert Locust CSV results to Allure format")
     parser.add_argument("--csv-file", required=True, help="Path to Locust stats CSV file")
     parser.add_argument("--output-dir", required=True, help="Directory to write Allure results")

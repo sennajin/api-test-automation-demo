@@ -33,8 +33,11 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-extend-select = ["E", "F", "I", "B", "UP", "SIM"]
+extend-select = ["E", "F", "I", "B", "UP", "SIM", "D"]
 ignore = ["E501", "E203"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.format]
 quote-style = "double"

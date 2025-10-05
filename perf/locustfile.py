@@ -1,5 +1,4 @@
-"""
-Basic Locust load tests for user management API.
+"""Basic Locust load tests for user management API.
 
 This file focuses on essential concurrent load testing scenarios.
 For functional performance testing, use pytest tests in tests/test_performance.py

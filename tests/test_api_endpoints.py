@@ -1,5 +1,4 @@
-"""
-API endpoint tests for the ReqRes.in API.
+"""API endpoint tests for the ReqRes.in API.
 
 This module provides test coverage for all API endpoints including
 CRUD operations, authentication, and performance testing.
@@ -41,7 +40,7 @@ from tests.schemas.json_schemas import (
     SINGLE_USER_SCHEMA,
     UPDATE_USER_SCHEMA,
 )
-from tests.test_constants import HTTP_STATUS, TEST_PATTERNS, TEST_USER_IDS
+from tests.test_constants import HTTP_STATUS, TEST_PATTERNS, TEST_USER_IDS, UserIdKey
 
 
 class BaseUserTest:
@@ -173,10 +172,12 @@ class TestUserRetrieval(BaseUserTest):
         [("NON_EXISTENT_USER", "NOT_FOUND"), ("INVALID_USER", "NOT_FOUND")],
     )
     def test_get_user_negative_cases(
-        self, api_client, users_endpoint, user_id_key, expected_status
-    ):
+        self, api_client, users_endpoint, user_id_key: UserIdKey, expected_status
+    ): 
         """Test retrieving users with invalid or non-existent IDs."""
-        user_id = TEST_USER_IDS[user_id_key]
+        # Narrow type of key to satisfy TypedDict indexing requirements
+        key: UserIdKey = user_id_key  # type: ignore[assignment]
+        user_id = TEST_USER_IDS[key]
         response = api_client.get(f"{users_endpoint}/{user_id}")
         assert response.status_code == HTTP_STATUS[expected_status]
 

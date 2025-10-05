@@ -1,5 +1,4 @@
-"""
-Test configuration and fixtures for the API automation test suite.
+"""Test configuration and fixtures for the API automation test suite.
 
 This module provides comprehensive test configuration, fixtures, and utility functions
 for the pytest API automation framework. It includes setup for Allure reporting,
@@ -41,7 +40,7 @@ import json
 import os
 from collections.abc import Mapping, MutableMapping
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import allure
 import pytest
@@ -64,6 +63,16 @@ def assert_valid_schema(payload: Any, schema: Mapping[str, Any]) -> None:
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
+    """Add custom command-line options for pytest.
+
+    The function defines additional command-line options that can be added to pytest
+    to configure settings for API testing. These options allow customization for the
+    API key and base URL, which are used during test execution.
+
+    Parameters:
+        parser (pytest.Parser): The parser used by pytest to add and manage
+                                custom command-line options.
+    """
     parser.addoption("--api-key", action="store", default=None, help="ReqRes API key")
     parser.addoption(
         "--base-url",
@@ -91,8 +100,7 @@ def pytest_configure(config: pytest.Config) -> None:
 
 @pytest.fixture(scope="session")
 def base_url(pytestconfig: pytest.Config) -> str:
-    """
-    Base URL fixture for the API under test.
+    """Base URL fixture for the API under test.
 
     Returns the base URL configured via command line option or environment variable.
     Defaults to 'https://reqres.in' if not specified.
@@ -106,8 +114,7 @@ def base_url(pytestconfig: pytest.Config) -> str:
 
 @pytest.fixture(scope="session")
 def api_key(pytestconfig: pytest.Config) -> str:
-    """
-    API key fixture for authentication.
+    """API key fixture for authentication.
 
     Returns the API key in order of preference:
     1. Command line option --api-key
@@ -143,6 +150,15 @@ class APIClient:
     """
 
     def __init__(self, session: requests.Session) -> None:
+        """Represents a class that is initialized with a requests session.
+
+        Manages a given session and can be used to perform HTTP operations or other
+        session-related functionalities. This class encapsulates the session instance
+        to facilitate interactions with external services or APIs securely and efficiently.
+
+        Args:
+            session: An instance of `requests.Session` to be used for making HTTP requests.
+        """
         self._session = session
 
     def request(
@@ -158,6 +174,42 @@ class APIClient:
         retry: bool = True,
         bulk_mode: bool = False,
     ) -> requests.Response:
+        """Send an HTTP request with optional retries and exponential backoff.
+
+        This is a thin wrapper around requests.Session.request that adds:
+        - Default timeout if none is provided
+        - Configurable retry logic (enabled by default)
+        - Exponential backoff with jitter for 429 and selected 5xx responses
+        - A more aggressive backoff profile for bulk operations
+
+        Args:
+            method: HTTP method to use (e.g., "GET", "POST").
+            url: Fully-qualified request URL.
+            params: Optional query parameters to append to the URL.
+            json: Optional JSON-serializable body to send as application/json.
+            data: Optional request body for form-encoded or raw data.
+            headers: Optional mapping of HTTP headers to include with the request.
+            timeout: Request timeout in seconds. If None, uses TIMEOUTS["DEFAULT"].
+            retry: Whether to apply retry/backoff behavior on retryable failures.
+            bulk_mode: If True, use BULK_RETRY_CONFIG; otherwise use RETRY_CONFIG.
+
+        Returns:
+            requests.Response: The final response from the server. If a retryable
+            status code is encountered and max retries are exhausted, the last
+            response is returned. When retries are exhausted without success, the
+            response will include header 'X-Retry-Exhausted: 1' to allow callers to
+            distinguish this case.
+
+        Raises:
+            requests.exceptions.RequestException: If a network/connection error occurs
+                and retries are exhausted.
+            RuntimeError: If the retry loop exits unexpectedly (should not occur).
+
+        Notes:
+            Retryable status codes are defined in RETRY_CONFIG["RETRY_STATUS_CODES"].
+            Backoff is exponential with a cap (MAX_BACKOFF) and small jitter to reduce
+            synchronization (thundering herd) issues.
+        """
         # Use default timeout if none provided
         if timeout is None:
             timeout = TIMEOUTS["DEFAULT"]
@@ -192,6 +244,8 @@ class APIClient:
 
                 # If this is the last attempt, return the response (don't retry)
                 if attempt == max_retries:
+                    # Ensure callers can detect exhaustion distinctly via a flag
+                    response.headers.setdefault("X-Retry-Exhausted", "1")
                     return response
 
                 # Calculate backoff time with jitter
@@ -207,6 +261,8 @@ class APIClient:
             except requests.exceptions.RequestException as e:
                 # If this is the last attempt, re-raise the exception
                 if attempt == max_retries:
+                    # Attach retry exhaustion info before raising
+                    e.args = (*e.args, "X-Retry-Exhausted=1")
                     raise
 
                 # For connection errors, also apply backoff
@@ -231,6 +287,18 @@ class APIClient:
         timeout: float | None = None,
         retry: bool = True,
     ) -> requests.Response:
+        """Send a GET request.
+
+        Args:
+            url: Target URL.
+            params: Optional query string parameters.
+            headers: Optional HTTP headers.
+            timeout: Request timeout in seconds.
+            retry: Whether to use retry/backoff logic.
+
+        Returns:
+            requests.Response: Server response.
+        """
         return self.request(
             "GET", url, params=params, headers=headers, timeout=timeout, retry=retry
         )
@@ -247,6 +315,21 @@ class APIClient:
         retry: bool = True,
         bulk_mode: bool = False,
     ) -> requests.Response:
+        """Send a POST request.
+
+        Args:
+            url: Target URL.
+            params: Optional query string parameters.
+            json: Optional JSON body.
+            data: Optional raw/form body.
+            headers: Optional HTTP headers.
+            timeout: Request timeout in seconds.
+            retry: Whether to use retry/backoff logic.
+            bulk_mode: Use bulk retry configuration.
+
+        Returns:
+            requests.Response: Server response.
+        """
         return self.request(
             "POST",
             url,
@@ -271,6 +354,21 @@ class APIClient:
         retry: bool = True,
         bulk_mode: bool = False,
     ) -> requests.Response:
+        """Send a PUT request.
+
+        Args:
+            url: Target URL.
+            params: Optional query string parameters.
+            json: Optional JSON body.
+            data: Optional raw/form body.
+            headers: Optional HTTP headers.
+            timeout: Request timeout in seconds.
+            retry: Whether to use retry/backoff logic.
+            bulk_mode: Use bulk retry configuration.
+
+        Returns:
+            requests.Response: Server response.
+        """
         return self.request(
             "PUT",
             url,
@@ -294,6 +392,20 @@ class APIClient:
         timeout: float | None = None,
         retry: bool = True,
     ) -> requests.Response:
+        """Send a PATCH request.
+
+        Args:
+            url: Target URL.
+            params: Optional query string parameters.
+            json: Optional JSON body.
+            data: Optional raw/form body.
+            headers: Optional HTTP headers.
+            timeout: Request timeout in seconds.
+            retry: Whether to use retry/backoff logic.
+
+        Returns:
+            requests.Response: Server response.
+        """
         return self.request(
             "PATCH",
             url,
@@ -314,6 +426,18 @@ class APIClient:
         timeout: float | None = None,
         retry: bool = True,
     ) -> requests.Response:
+        """Send a DELETE request.
+
+        Args:
+            url: Target URL.
+            params: Optional query string parameters.
+            headers: Optional HTTP headers.
+            timeout: Request timeout in seconds.
+            retry: Whether to use retry/backoff logic.
+
+        Returns:
+            requests.Response: Server response.
+        """
         return self.request(
             "DELETE", url, params=params, headers=headers, timeout=timeout, retry=retry
         )
@@ -321,6 +445,14 @@ class APIClient:
 
 @pytest.fixture(scope="session")
 def client(api_key: str) -> requests.Session:
+    """Create a configured requests.Session for API calls.
+
+    Args:
+        api_key: API key to include in default headers.
+
+    Returns:
+        Configured requests.Session with default headers.
+    """
     session = requests.Session()
     session.headers.update({"x-api-key": api_key, "Accept": "application/json"})
     return session
@@ -328,6 +460,14 @@ def client(api_key: str) -> requests.Session:
 
 @pytest.fixture(scope="session")
 def api_client(client: requests.Session) -> APIClient:
+    """Provide an APIClient with retry logic enabled by default.
+
+    Args:
+        client: Shared requests.Session fixture.
+
+    Returns:
+        APIClient instance using the provided session.
+    """
     return APIClient(client)
 
 
@@ -348,26 +488,66 @@ def api_client_no_retry(client: requests.Session) -> APIClient:
 
 @pytest.fixture(scope="session")
 def users_endpoint(base_url: str) -> str:
+    """Users endpoint base URL.
+
+    Args:
+        base_url: Base host URL for the API.
+
+    Returns:
+        Fully-qualified /api/users endpoint.
+    """
     return f"{base_url}/api/users"
 
 
 @pytest.fixture(scope="session")
 def support_endpoint(base_url: str) -> str:
+    """Support/resources endpoint base URL.
+
+    Args:
+        base_url: Base host URL for the API.
+
+    Returns:
+        Fully-qualified /api/unknown endpoint.
+    """
     return f"{base_url}/api/unknown"
 
 
 @pytest.fixture(scope="session")
 def login_endpoint(base_url: str) -> str:
+    """Login endpoint base URL.
+
+    Args:
+        base_url: Base host URL for the API.
+
+    Returns:
+        Fully-qualified /api/login endpoint.
+    """
     return f"{base_url}/api/login"
 
 
 @pytest.fixture(scope="session")
 def register_endpoint(base_url: str) -> str:
+    """Register endpoint base URL.
+
+    Args:
+        base_url: Base host URL for the API.
+
+    Returns:
+        Fully-qualified /api/register endpoint.
+    """
     return f"{base_url}/api/register"
 
 
 @pytest.fixture(scope="session")
 def logout_endpoint(base_url: str) -> str:
+    """Logout endpoint base URL.
+
+    Args:
+        base_url: Base host URL for the API.
+
+    Returns:
+        Fully-qualified /api/logout endpoint.
+    """
     return f"{base_url}/api/logout"
 
 
@@ -557,15 +737,63 @@ def performance_timer():
             self.end_time = time.time()
             return self
 
-        def assert_within(self, threshold_key: str = "RESPONSE_TIME_FAST"):
-            """Assert response time is within threshold."""
-            if self.start_time and self.end_time:
-                response_time = self.end_time - self.start_time
-                threshold = PERFORMANCE_THRESHOLDS[threshold_key]
-                assert response_time < threshold, (
-                    f"Response time {response_time:.2f}s exceeds {threshold}s threshold"
+        from typing import Literal
+
+        # Define the valid threshold key types
+        threshold_key_type = Literal[
+            "RESPONSE_TIME_FAST",
+            "RESPONSE_TIME_SLOW",
+            "AVERAGE_RESPONSE_TIME",
+            "CONCURRENT_REQUESTS",
+            "BULK_OPERATIONS",
+        ]
+
+        def assert_within(self, threshold_key: str = "RESPONSE_TIME_FAST") -> PerformanceTimer:
+            """Assert that the response time is within the specified threshold.
+
+            Args:
+                threshold_key: Key to use for threshold lookup in PERFORMANCE_THRESHOLDS.
+                              Must be one of: 'RESPONSE_TIME_FAST', 'RESPONSE_TIME_SLOW',
+                              'AVERAGE_RESPONSE_TIME', 'CONCURRENT_REQUESTS', 'BULK_OPERATIONS'
+
+            Returns:
+                Self for method chaining
+
+            Raises:
+                AssertionError: If response time exceeds threshold or timer wasn't started/stopped
+                KeyError: If threshold_key doesn't exist in PERFORMANCE_THRESHOLDS
+            """
+            # Ensure timer was properly started and stopped
+            if not (self.start_time and self.end_time):
+                raise AssertionError(
+                    "Timer must be started and stopped before asserting response time"
                 )
+
+            # Verify threshold_key exists before trying to access it
+            valid_keys = (
+                "RESPONSE_TIME_FAST",
+                "RESPONSE_TIME_SLOW",
+                "AVERAGE_RESPONSE_TIME",
+                "CONCURRENT_REQUESTS",
+                "BULK_OPERATIONS",
+            )
+
+            if threshold_key not in valid_keys:
+                valid_keys_str = ", ".join(f"'{k}'" for k in valid_keys)
+                raise KeyError(f"Invalid threshold_key: '{threshold_key}'. Must be one of: {valid_keys_str}")
+
+            # Use cast to tell the type checker this is a valid key
+            validated_key = cast(self.threshold_key_type, threshold_key)
+            threshold = PERFORMANCE_THRESHOLDS[validated_key]
+
+            # Compare elapsed time against threshold
+            response_time = self.elapsed
+            assert response_time < threshold, (
+                f"Response time {response_time:.2f}s exceeds {threshold_key} threshold of {threshold:.2f}s"
+            )
+
             return self
+
 
         @property
         def elapsed(self) -> float:

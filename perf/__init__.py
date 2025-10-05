@@ -1,1 +1,1 @@
-# Performance testing package
+# Performance testing package  # noqa: D104

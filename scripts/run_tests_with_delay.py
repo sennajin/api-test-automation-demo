@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Test runner script with built-in delays to prevent rate limiting.
+"""Test runner script with built-in delays to prevent rate limiting.
 
 This script runs pytest with additional delays between test classes
 to reduce the chance of hitting rate limits on external APIs.
@@ -14,7 +13,6 @@ from pathlib import Path
 
 def run_tests_with_delay():
     """Run tests with delays to prevent rate limiting."""
-
     # Base pytest command
     base_cmd = [
         "pytest",
