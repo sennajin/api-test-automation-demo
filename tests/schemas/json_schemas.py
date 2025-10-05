@@ -6,32 +6,20 @@ USER_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-        "id": {
-            "type": "integer",
-            "minimum": 1,
-            "description": "Unique user identifier"
-        },
+        "id": {"type": "integer", "minimum": 1, "description": "Unique user identifier"},
         "email": {
-            "type": "string", 
+            "type": "string",
             "format": "email",
             "minLength": 1,
-            "description": "User's email address"
+            "description": "User's email address",
         },
-        "first_name": {
-            "type": "string",
-            "minLength": 1,
-            "description": "User's first name"
-        },
-        "last_name": {
-            "type": "string",
-            "minLength": 1,
-            "description": "User's last name"
-        },
+        "first_name": {"type": "string", "minLength": 1, "description": "User's first name"},
+        "last_name": {"type": "string", "minLength": 1, "description": "User's last name"},
         "avatar": {
-            "type": "string", 
+            "type": "string",
             "format": "uri",
             "minLength": 1,
-            "description": "URL to user's avatar image"
+            "description": "URL to user's avatar image",
         },
     },
     "required": ["id", "email", "first_name", "last_name", "avatar"],
@@ -42,17 +30,8 @@ SUPPORT_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-        "url": {
-            "type": "string", 
-            "format": "uri",
-            "minLength": 1,
-            "description": "Support URL"
-        },
-        "text": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Support text message"
-        },
+        "url": {"type": "string", "format": "uri", "minLength": 1, "description": "Support URL"},
+        "text": {"type": "string", "minLength": 1, "description": "Support text message"},
     },
     "required": ["url", "text"],
     "additionalProperties": False,
@@ -60,27 +39,15 @@ SUPPORT_SCHEMA = {
 
 # Base pagination schema for reuse
 BASE_PAGINATION_SCHEMA = {
-    "page": {
-        "type": "integer", 
-        "minimum": 1,
-        "description": "Current page number"
-    },
+    "page": {"type": "integer", "minimum": 1, "description": "Current page number"},
     "per_page": {
-        "type": "integer", 
+        "type": "integer",
         "minimum": 1,
         "maximum": 100,
-        "description": "Number of items per page"
+        "description": "Number of items per page",
     },
-    "total": {
-        "type": "integer", 
-        "minimum": 0,
-        "description": "Total number of items"
-    },
-    "total_pages": {
-        "type": "integer", 
-        "minimum": 1,
-        "description": "Total number of pages"
-    },
+    "total": {"type": "integer", "minimum": 0, "description": "Total number of items"},
+    "total_pages": {"type": "integer", "minimum": 1, "description": "Total number of pages"},
     "support": SUPPORT_SCHEMA,
 }
 
@@ -110,37 +77,17 @@ CREATE_USER_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-        "name": {
-            "type": "string",
-            "minLength": 1,
-            "description": "User's name"
-        },
-        "job": {
-            "type": "string",
-            "minLength": 1,
-            "description": "User's job title"
-        },
-        "id": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Generated user ID"
-        },
-        "createdAt": {
-            "type": "string", 
-            "format": "date-time",
-            "description": "Creation timestamp"
-        },
+        "name": {"type": "string", "minLength": 1, "description": "User's name"},
+        "job": {"type": "string", "minLength": 1, "description": "User's job title"},
+        "id": {"type": "string", "minLength": 1, "description": "Generated user ID"},
+        "createdAt": {"type": "string", "format": "date-time", "description": "Creation timestamp"},
         "age": {
             "type": "integer",
             "minimum": 0,
             "maximum": 150,
-            "description": "User's age (optional)"
+            "description": "User's age (optional)",
         },
-        "email": {
-            "type": "string", 
-            "format": "email",
-            "description": "User's email (optional)"
-        },
+        "email": {"type": "string", "format": "email", "description": "User's email (optional)"},
     },
     "required": ["id", "createdAt"],
     "additionalProperties": True,
@@ -150,20 +97,12 @@ UPDATE_USER_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-        "name": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Updated user's name"
-        },
-        "job": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Updated user's job title"
-        },
+        "name": {"type": "string", "minLength": 1, "description": "Updated user's name"},
+        "job": {"type": "string", "minLength": 1, "description": "Updated user's job title"},
         "updatedAt": {
-            "type": "string", 
+            "type": "string",
             "format": "date-time",
-            "description": "Last update timestamp"
+            "description": "Last update timestamp",
         },
     },
     "required": ["updatedAt"],
@@ -175,11 +114,7 @@ BASE_ERROR_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-        "error": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Error message"
-        },
+        "error": {"type": "string", "minLength": 1, "description": "Error message"},
     },
     "required": ["error"],
     "additionalProperties": False,
@@ -218,11 +153,7 @@ LOGIN_SUCCESS_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-        "token": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Authentication token"
-        },
+        "token": {"type": "string", "minLength": 1, "description": "Authentication token"},
     },
     "required": ["token"],
     "additionalProperties": False,
@@ -233,16 +164,8 @@ REGISTER_SUCCESS_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-        "id": {
-            "type": "integer",
-            "minimum": 1,
-            "description": "User ID"
-        },
-        "token": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Authentication token"
-        },
+        "id": {"type": "integer", "minimum": 1, "description": "User ID"},
+        "token": {"type": "string", "minLength": 1, "description": "Authentication token"},
     },
     "required": ["id", "token"],
     "additionalProperties": False,
@@ -256,19 +179,9 @@ VALIDATION_ERROR_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-        "error": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Validation error message"
-        },
-        "field": {
-            "type": "string",
-            "description": "Field that failed validation"
-        },
-        "code": {
-            "type": "string",
-            "description": "Error code"
-        }
+        "error": {"type": "string", "minLength": 1, "description": "Validation error message"},
+        "field": {"type": "string", "description": "Field that failed validation"},
+        "code": {"type": "string", "description": "Error code"},
     },
     "required": ["error"],
     "additionalProperties": True,
@@ -286,5 +199,5 @@ EMPTY_RESPONSE_SCHEMA = {
 DELETE_SUCCESS_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "null",
-    "description": "Empty response body for successful deletion"
+    "description": "Empty response body for successful deletion",
 }

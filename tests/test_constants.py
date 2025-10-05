@@ -1,8 +1,9 @@
 """Centralized test constants and configuration values."""
 
 from __future__ import annotations
+
 from enum import IntEnum
-from typing import Dict, List, Final, TypedDict
+from typing import Final, TypedDict
 
 
 # Type definitions for better IDE support
@@ -30,7 +31,7 @@ class TimeoutConfig(TypedDict):
 class RetryConfig(TypedDict):
     MAX_RETRIES: int
     BACKOFF_FACTOR: float
-    RETRY_STATUS_CODES: List[int]
+    RETRY_STATUS_CODES: list[int]
     MAX_BACKOFF: float
 
 
@@ -80,7 +81,7 @@ PERFORMANCE_THRESHOLDS: Final[PerformanceConfig] = {
 }
 
 # Test data patterns for Unicode and special character testing
-TEST_PATTERNS: Final[Dict[str, str]] = {
+TEST_PATTERNS: Final[dict[str, str]] = {
     "SPECIAL_CHARS": "José María O'Connor-Smith",  # Test handling of accents and special chars
     "UNICODE_CHARS": "张三李四",  # Test handling of non-Latin characters
     "EMPTY_STRING": "",  # Test handling of empty inputs
@@ -103,7 +104,7 @@ class RetrySettings:
     # Status codes that should trigger a retry:
     # 429: Too Many Requests (rate limiting)
     # 502: Bad Gateway, 503: Service Unavailable, 504: Gateway Timeout (server errors)
-    RETRY_STATUS_CODES: Final[List[int]] = [429, 502, 503, 504]
+    RETRY_STATUS_CODES: Final[list[int]] = [429, 502, 503, 504]
     # Maximum backoff time regardless of retry count (increased for CI)
     MAX_BACKOFF: Final[float] = 30.0
 
@@ -123,4 +124,3 @@ BULK_RETRY_CONFIG: Final[RetryConfig] = {
     "RETRY_STATUS_CODES": RetrySettings.RETRY_STATUS_CODES,
     "MAX_BACKOFF": 60.0,  # Longer maximum wait for bulk operations
 }
-

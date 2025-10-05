@@ -39,15 +39,16 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Mapping, MutableMapping
 from pathlib import Path
-from typing import Any, Mapping, MutableMapping, Optional
+from typing import Any
 
+import allure
 import pytest
 import requests
-import allure
 from jsonschema import ValidationError, validate
 
-from tests.test_constants import TIMEOUTS, RETRY_CONFIG, BULK_RETRY_CONFIG
+from tests.test_constants import BULK_RETRY_CONFIG, RETRY_CONFIG, TIMEOUTS
 
 
 class SchemaValidationError(AssertionError):
@@ -78,11 +79,11 @@ def pytest_configure(config: pytest.Config) -> None:
     allure.dynamic.label("framework", "pytest")
     allure.dynamic.label("language", "python")
     allure.dynamic.label("test_type", "api_automation")
-    
+
     # Add environment information
     base_url = config.getoption("--base-url")
     api_key = config.getoption("--api-key") or os.getenv("REQRES_API_KEY") or "reqres-free-v1"
-    
+
     allure.dynamic.label("environment", "test")
     allure.dynamic.label("base_url", base_url)
     allure.dynamic.label("api_key", api_key[:10] + "..." if len(api_key) > 10 else api_key)
@@ -92,10 +93,10 @@ def pytest_configure(config: pytest.Config) -> None:
 def base_url(pytestconfig: pytest.Config) -> str:
     """
     Base URL fixture for the API under test.
-    
+
     Returns the base URL configured via command line option or environment variable.
     Defaults to 'https://reqres.in' if not specified.
-    
+
     Usage:
         Used by other fixtures to construct endpoint URLs.
         Can be overridden via --base-url command line option.
@@ -107,12 +108,12 @@ def base_url(pytestconfig: pytest.Config) -> str:
 def api_key(pytestconfig: pytest.Config) -> str:
     """
     API key fixture for authentication.
-    
+
     Returns the API key in order of preference:
     1. Command line option --api-key
     2. Environment variable REQRES_API_KEY
     3. Default value "reqres-free-v1"
-    
+
     Usage:
         Used by the API client for authentication headers.
         Can be overridden via --api-key command line option.
@@ -123,18 +124,18 @@ def api_key(pytestconfig: pytest.Config) -> str:
 
 class APIClient:
     """Lightweight wrapper over requests.Session with convenience helpers.
-    
+
     Features:
     - Automatic retry with exponential backoff for rate limiting (429) and server errors (5xx)
     - Configurable retry behavior (can be disabled per request)
     - Jitter to prevent thundering herd problems
     - Comprehensive logging of retry attempts
-    
+
     Rate Limiting Solution:
     Instead of accepting 429 responses as valid test outcomes, this client automatically
     retries rate-limited requests with exponential backoff. This ensures tests focus on
     actual business logic rather than infrastructure limitations.
-    
+
     Usage:
     - Default behavior: All requests retry automatically on 429/5xx errors
     - Disable retries: Pass retry=False to any HTTP method
@@ -149,30 +150,30 @@ class APIClient:
         method: str,
         url: str,
         *,
-        params: Optional[Mapping[str, Any]] = None,
-        json: Optional[Any] = None,
-        data: Optional[Any] = None,
-        headers: Optional[MutableMapping[str, str]] = None,
-        timeout: Optional[float] = None,
+        params: Mapping[str, Any] | None = None,
+        json: Any | None = None,
+        data: Any | None = None,
+        headers: MutableMapping[str, str] | None = None,
+        timeout: float | None = None,
         retry: bool = True,
         bulk_mode: bool = False,
     ) -> requests.Response:
         # Use default timeout if none provided
         if timeout is None:
             timeout = TIMEOUTS["DEFAULT"]
-        
+
         # Implement retry logic for rate limiting and server errors
-        import time
         import random
-        
+        import time
+
         # Use bulk retry config for bulk operations, regular config otherwise
         config = BULK_RETRY_CONFIG if bulk_mode else RETRY_CONFIG
-        
+
         max_retries = config["MAX_RETRIES"] if retry else 0
         backoff_factor = config["BACKOFF_FACTOR"]
         retry_status_codes = config["RETRY_STATUS_CODES"]
         max_backoff = config["MAX_BACKOFF"]
-        
+
         for attempt in range(max_retries + 1):
             try:
                 response = self._session.request(
@@ -184,36 +185,40 @@ class APIClient:
                     headers=headers,
                     timeout=timeout,
                 )
-                
+
                 # If successful or non-retryable error, return response
                 if response.status_code not in retry_status_codes:
                     return response
-                
+
                 # If this is the last attempt, return the response (don't retry)
                 if attempt == max_retries:
                     return response
-                
+
                 # Calculate backoff time with jitter
-                backoff_time = min(backoff_factor * (2 ** attempt), max_backoff)
+                backoff_time = min(backoff_factor * (2**attempt), max_backoff)
                 jitter = random.uniform(0, 0.1 * backoff_time)  # Add up to 10% jitter
                 wait_time = backoff_time + jitter
-                
-                print(f"Rate limited (attempt {attempt + 1}/{max_retries + 1}), waiting {wait_time:.2f}s before retry...")
+
+                print(
+                    f"Rate limited (attempt {attempt + 1}/{max_retries + 1}), waiting {wait_time:.2f}s before retry..."
+                )
                 time.sleep(wait_time)
-                
+
             except requests.exceptions.RequestException as e:
                 # If this is the last attempt, re-raise the exception
                 if attempt == max_retries:
                     raise
-                
+
                 # For connection errors, also apply backoff
-                backoff_time = min(backoff_factor * (2 ** attempt), max_backoff)
+                backoff_time = min(backoff_factor * (2**attempt), max_backoff)
                 jitter = random.uniform(0, 0.1 * backoff_time)
                 wait_time = backoff_time + jitter
-                
-                print(f"Request failed (attempt {attempt + 1}/{max_retries + 1}): {e}, waiting {wait_time:.2f}s before retry...")
+
+                print(
+                    f"Request failed (attempt {attempt + 1}/{max_retries + 1}): {e}, waiting {wait_time:.2f}s before retry..."
+                )
                 time.sleep(wait_time)
-        
+
         # This should never be reached, but just in case
         raise RuntimeError("Unexpected end of retry loop")
 
@@ -221,22 +226,24 @@ class APIClient:
         self,
         url: str,
         *,
-        params: Optional[Mapping[str, Any]] = None,
-        headers: Optional[MutableMapping[str, str]] = None,
-        timeout: Optional[float] = None,
+        params: Mapping[str, Any] | None = None,
+        headers: MutableMapping[str, str] | None = None,
+        timeout: float | None = None,
         retry: bool = True,
     ) -> requests.Response:
-        return self.request("GET", url, params=params, headers=headers, timeout=timeout, retry=retry)
+        return self.request(
+            "GET", url, params=params, headers=headers, timeout=timeout, retry=retry
+        )
 
     def post(
         self,
         url: str,
         *,
-        params: Optional[Mapping[str, Any]] = None,
-        json: Optional[Any] = None,
-        data: Optional[Any] = None,
-        headers: Optional[MutableMapping[str, str]] = None,
-        timeout: Optional[float] = None,
+        params: Mapping[str, Any] | None = None,
+        json: Any | None = None,
+        data: Any | None = None,
+        headers: MutableMapping[str, str] | None = None,
+        timeout: float | None = None,
         retry: bool = True,
         bulk_mode: bool = False,
     ) -> requests.Response:
@@ -256,11 +263,11 @@ class APIClient:
         self,
         url: str,
         *,
-        params: Optional[Mapping[str, Any]] = None,
-        json: Optional[Any] = None,
-        data: Optional[Any] = None,
-        headers: Optional[MutableMapping[str, str]] = None,
-        timeout: Optional[float] = None,
+        params: Mapping[str, Any] | None = None,
+        json: Any | None = None,
+        data: Any | None = None,
+        headers: MutableMapping[str, str] | None = None,
+        timeout: float | None = None,
         retry: bool = True,
         bulk_mode: bool = False,
     ) -> requests.Response:
@@ -280,11 +287,11 @@ class APIClient:
         self,
         url: str,
         *,
-        params: Optional[Mapping[str, Any]] = None,
-        json: Optional[Any] = None,
-        data: Optional[Any] = None,
-        headers: Optional[MutableMapping[str, str]] = None,
-        timeout: Optional[float] = None,
+        params: Mapping[str, Any] | None = None,
+        json: Any | None = None,
+        data: Any | None = None,
+        headers: MutableMapping[str, str] | None = None,
+        timeout: float | None = None,
         retry: bool = True,
     ) -> requests.Response:
         return self.request(
@@ -302,12 +309,14 @@ class APIClient:
         self,
         url: str,
         *,
-        params: Optional[Mapping[str, Any]] = None,
-        headers: Optional[MutableMapping[str, str]] = None,
-        timeout: Optional[float] = None,
+        params: Mapping[str, Any] | None = None,
+        headers: MutableMapping[str, str] | None = None,
+        timeout: float | None = None,
         retry: bool = True,
     ) -> requests.Response:
-        return self.request("DELETE", url, params=params, headers=headers, timeout=timeout, retry=retry)
+        return self.request(
+            "DELETE", url, params=params, headers=headers, timeout=timeout, retry=retry
+        )
 
 
 @pytest.fixture(scope="session")
@@ -328,11 +337,11 @@ def api_client_no_retry(client: requests.Session) -> APIClient:
     api_client = APIClient(client)
     # Override methods to default retry=False
     original_request = api_client.request
-    
+
     def request_no_retry(*args, **kwargs):
-        kwargs.setdefault('retry', False)
+        kwargs.setdefault("retry", False)
         return original_request(*args, **kwargs)
-    
+
     api_client.request = request_no_retry
     return api_client
 
@@ -365,10 +374,7 @@ def logout_endpoint(base_url: str) -> str:
 @pytest.fixture
 def valid_credentials() -> dict[str, str]:
     """Valid login credentials for successful authentication."""
-    return {
-        "email": "eve.holt@reqres.in",
-        "password": "cityslicka"
-    }
+    return {"email": "eve.holt@reqres.in", "password": "cityslicka"}
 
 
 @pytest.fixture
@@ -384,7 +390,7 @@ def invalid_credentials() -> dict[str, str]:
 def test_data() -> dict[str, Any]:
     """Load test data from JSON file."""
     test_data_path = Path(__file__).parent.parent / "resources" / "data" / "test_users.json"
-    with open(test_data_path, "r", encoding="utf-8") as f:
+    with open(test_data_path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -466,9 +472,10 @@ def all_invalid_users(test_data) -> list[dict[str, Any]]:
 @pytest.fixture
 def user_data_factory(test_data):
     """Factory fixture to create user data on demand."""
+
     def _create_user_data(data_type: str = "valid", index: int = 0):
         """Create user data by type and index.
-        
+
         Args:
             data_type: Type of data ('valid', 'invalid', 'edge_case', 'performance', 'update')
             index: Index of the data item to return
@@ -479,7 +486,7 @@ def user_data_factory(test_data):
             if index < len(data_list):
                 return data_list[index].copy()
         return {"name": "Default User", "job": "Default Job"}
-    
+
     return _create_user_data
 
 
@@ -488,15 +495,12 @@ def isolated_user_data():
     """Create unique user data for each test to ensure test isolation."""
     import time
     import uuid
-    
+
     # Create unique identifiers to prevent test interference
     timestamp = int(time.time() * 1000)  # milliseconds
     unique_id = str(uuid.uuid4())[:8]
-    
-    return {
-        "name": f"Test User {unique_id}",
-        "job": f"Test Job {timestamp}"
-    }
+
+    return {"name": f"Test User {unique_id}", "job": f"Test Job {timestamp}"}
 
 
 @pytest.fixture
@@ -504,39 +508,32 @@ def isolated_update_data():
     """Create unique update data for each test to ensure test isolation."""
     import time
     import uuid
-    
+
     # Create unique identifiers to prevent test interference
     timestamp = int(time.time() * 1000)  # milliseconds
     unique_id = str(uuid.uuid4())[:8]
-    
-    return {
-        "name": f"Updated User {unique_id}",
-        "job": f"Updated Job {timestamp}"
-    }
+
+    return {"name": f"Updated User {unique_id}", "job": f"Updated Job {timestamp}"}
 
 
 @pytest.fixture
 def response_validator():
     """Factory fixture for common response validations."""
 
-
-    from tests.test_constants import HTTP_STATUS, PERFORMANCE_THRESHOLDS
-    import time
-    
     def _validate_response(response, expected_status=None, schema=None, max_time=None):
         """Validate common response patterns."""
         # Status code validation
         if expected_status:
             assert response.status_code == expected_status
-        
+
         # Schema validation
         if schema:
             payload = response.json()
             assert_valid_schema(payload, schema)
             return payload
-        
+
         return response
-    
+
     return _validate_response
 
 
@@ -544,36 +541,39 @@ def response_validator():
 def performance_timer():
     """Fixture for measuring and asserting response times."""
     import time
+
     from tests.test_constants import PERFORMANCE_THRESHOLDS
-    
+
     class PerformanceTimer:
         def __init__(self):
             self.start_time = None
             self.end_time = None
-        
+
         def start(self):
             self.start_time = time.time()
             return self
-        
+
         def stop(self):
             self.end_time = time.time()
             return self
-        
+
         def assert_within(self, threshold_key: str = "RESPONSE_TIME_FAST"):
             """Assert response time is within threshold."""
             if self.start_time and self.end_time:
                 response_time = self.end_time - self.start_time
                 threshold = PERFORMANCE_THRESHOLDS[threshold_key]
-                assert response_time < threshold, f"Response time {response_time:.2f}s exceeds {threshold}s threshold"
+                assert response_time < threshold, (
+                    f"Response time {response_time:.2f}s exceeds {threshold}s threshold"
+                )
             return self
-        
+
         @property
         def elapsed(self) -> float:
             """Get elapsed time in seconds."""
             if self.start_time and self.end_time:
                 return self.end_time - self.start_time
             return 0.0
-    
+
     return PerformanceTimer()
 
 
@@ -584,11 +584,6 @@ def xfail_if_rate_limited(response, where: str | None = None):
         pytest.xfail(f"Rate limited by external API (HTTP 429){where_txt}.")
 
 
-# JSON Schema validation helpers
-
-
-
-
 # Allure-specific fixtures and helpers
 @pytest.fixture
 def allure_environment():
@@ -597,52 +592,54 @@ def allure_environment():
         allure.attach(
             name="Environment Info",
             body=f"Base URL: {os.getenv('BASE_URL', 'https://reqres.in')}\n"
-                 f"API Key: {os.getenv('REQRES_API_KEY', 'reqres-free-v1')[:10]}...",
-            attachment_type=allure.attachment_type.TEXT
+            f"API Key: {os.getenv('REQRES_API_KEY', 'reqres-free-v1')[:10]}...",
+            attachment_type=allure.attachment_type.TEXT,
         )
 
 
 @pytest.fixture
 def allure_attach_response():
     """Fixture to attach response details to Allure report."""
+
     def _attach_response(response: requests.Response, step_name: str = "API Response"):
         with allure.step(step_name):
             # Attach response status
             allure.attach(
                 name="Response Status",
                 body=str(response.status_code),
-                attachment_type=allure.attachment_type.TEXT
+                attachment_type=allure.attachment_type.TEXT,
             )
-            
+
             # Attach response headers
             allure.attach(
                 name="Response Headers",
                 body=str(dict(response.headers)),
-                attachment_type=allure.attachment_type.JSON
+                attachment_type=allure.attachment_type.JSON,
             )
-            
+
             # Attach response body if available
             try:
                 if response.content:
                     allure.attach(
                         name="Response Body",
                         body=response.text,
-                        attachment_type=allure.attachment_type.JSON
+                        attachment_type=allure.attachment_type.JSON,
                     )
             except Exception:
                 # If JSON parsing fails, attach as text
                 allure.attach(
                     name="Response Body",
                     body=response.text,
-                    attachment_type=allure.attachment_type.TEXT
+                    attachment_type=allure.attachment_type.TEXT,
                 )
-    
+
     return _attach_response
 
 
 @pytest.fixture
 def allure_attach_request():
     """Fixture to attach request details to Allure report."""
+
     def _attach_request(method: str, url: str, **kwargs):
         with allure.step(f"Making {method} request to {url}"):
             # Attach request details
@@ -653,57 +650,63 @@ def allure_attach_request():
                 "json": kwargs.get("json"),
                 "data": kwargs.get("data"),
                 "headers": kwargs.get("headers"),
-                "timeout": kwargs.get("timeout")
+                "timeout": kwargs.get("timeout"),
             }
-            
+
             allure.attach(
                 name="Request Details",
                 body=str(request_info),
-                attachment_type=allure.attachment_type.JSON
+                attachment_type=allure.attachment_type.JSON,
             )
-    
+
     return _attach_request
 
 
 def allure_step(step_name: str):
     """Decorator to add Allure step to test methods."""
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             with allure.step(step_name):
                 return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
 def allure_attach_file(file_path: str, name: str | None = None, attachment_type: str = "TEXT"):
     """Helper to attach files to Allure report."""
     if os.path.exists(file_path):
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
-        
+
         allure.attach(
             name=name or os.path.basename(file_path),
             body=content,
-            attachment_type=getattr(allure.attachment_type, attachment_type, allure.attachment_type.TEXT)
+            attachment_type=getattr(
+                allure.attachment_type, attachment_type, allure.attachment_type.TEXT
+            ),
         )
 
 
 # Rate limiting protection hooks
 _last_test_class = None
 
+
 def pytest_runtest_setup(item):
     """Add delays between test classes to prevent rate limiting."""
     global _last_test_class
     import time
-    
+
     test_class = item.cls.__name__ if item.cls else "NoClass"
-    
+
     # Add delay between different test classes
     if _last_test_class and _last_test_class != test_class:
-        print(f"\nRate limiting protection: Waiting 2s between test classes...")
+        print("\nRate limiting protection: Waiting 2s between test classes...")
         time.sleep(2.0)
-    
+
     _last_test_class = test_class
-    
+
     # Small delay between tests in the same class
     time.sleep(0.5)
