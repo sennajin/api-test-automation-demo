@@ -1,1 +1,0 @@
-Basic security headers are present
