@@ -2,8 +2,6 @@
 
 A pytest-based API testing framework for RESTful APIs, with a focus on the ReqRes.in API. This framework provides test coverage for core API functionality, including CRUD operations, authentication, and performance testing.
 
-# 👉 **[CLICK HERE FOR TEST REPORTS](https://sennajin.github.io/api_test_automation_demo/index.html)** 👈
-
 ## Features
 
 - **Test Coverage**: Test suite covering core CRUD operations, authentication, and performance
